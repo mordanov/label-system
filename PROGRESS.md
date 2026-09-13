@@ -21,6 +21,9 @@
 - [x] scripts/start.sh + scripts/stop.sh
 - [x] scripts/start.ps1 + scripts/stop.ps1 (Windows)
 - [x] README.md (Windows notes: ExecutionPolicy, host.docker.internal, BLE constraint, Task Scheduler)
+- [x] POST /icons/generate — AI icon generation via OpenAI (configurable model, default gpt-image-1)
+- [x] assets/icons/generated/ Docker volume — generated icons persist across rebuilds
+- [x] Frontend: Generate icon section in CreateForm (preview, use, retry)
 
 ## Known Limitations
 
