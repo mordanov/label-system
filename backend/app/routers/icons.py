@@ -22,8 +22,8 @@ async def list_icons(current_user: str = Depends(get_current_user)):
 async def get_icon(filename: str, current_user: str = Depends(get_current_user)):
     # Prevent path traversal
     path = (ICONS_DIR / filename).resolve()
-    if not str(path).startswith(str(ICONS_DIR.resolve())):
-        raise HTTPException(status_code=400, detail="Invalid filename")
+    if not path.is_relative_to(ICONS_DIR.resolve()):
+        raise HTTPException(status_code=404, detail="Not found")
     if not path.exists() or path.suffix.lower() != ".png":
         raise HTTPException(status_code=404)
     return FileResponse(path, media_type="image/png")
