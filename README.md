@@ -5,13 +5,13 @@ Home inventory tracker with label printing on MXW01 BLE thermal printer.
 ## Architecture
 
 - **db, backend, frontend** — Docker Compose
-- **print-service** — native macOS process (BLE requires host Bluetooth)
+- **print-service** — native host process (BLE requires host Bluetooth; Docker Desktop has no BLE access on either macOS or Windows)
 
 ## Prerequisites
 
 - Docker Desktop
 - Python 3
-- Bluetooth-capable Mac
+- Bluetooth-capable machine (Mac or Windows)
 - MXW01 BLE thermal printer
 
 ## First Run
@@ -31,11 +31,20 @@ python3 -c "import asyncio; from bleak import BleakScanner; asyncio.run(BleakSca
 
 ### 2. Start everything
 
+**macOS / Linux:**
 ```bash
 ./scripts/start.sh
 ```
 
-This will:
+**Windows (PowerShell):**
+```powershell
+# Allow local scripts once (per user, one-time):
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+./scripts/start.ps1
+```
+
+Both scripts:
 - Start db, backend, frontend via Docker Compose
 - Create print-service venv (first run only) and install deps
 - Start print-service natively on the host
@@ -44,8 +53,14 @@ Frontend: http://localhost:3000
 
 ### 3. Stop everything
 
+**macOS / Linux:**
 ```bash
 ./scripts/stop.sh
+```
+
+**Windows (PowerShell):**
+```powershell
+./scripts/stop.ps1
 ```
 
 ## Service URLs
@@ -99,4 +114,22 @@ cd frontend && npm run dev  # proxies /api → localhost:8000
 Print service:
 ```bash
 cd print-service && source .venv/bin/activate && python main.py
+```
+
+## Windows Notes
+
+**BLE constraint:** Docker Desktop on Windows runs in a WSL2 VM with no access to the host Bluetooth adapter — the same constraint as macOS. `print-service` must run natively on the host in both cases. `host.docker.internal` resolves correctly on Docker Desktop for Windows with no extra configuration.
+
+**Autostart with Task Scheduler:**
+```powershell
+$action  = New-ScheduledTaskAction -Execute 'powershell.exe' `
+               -Argument "-NonInteractive -File C:\path\to\label-system\scripts\start.ps1"
+$trigger = New-ScheduledTaskTrigger -AtLogOn
+Register-ScheduledTask -TaskName 'LabelSystem' -Action $action -Trigger $trigger -RunLevel Highest
+```
+
+**Find your printer's BLE address (Windows):**
+```powershell
+cd print-service
+.\.venv\Scripts\python.exe -c "import asyncio; from bleak import BleakScanner; asyncio.run(BleakScanner.discover())"
 ```

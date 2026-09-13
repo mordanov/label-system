@@ -19,7 +19,8 @@
 - [x] Frontend: product table, search, print/delete actions
 - [x] Frontend: Dockerfile + nginx
 - [x] scripts/start.sh + scripts/stop.sh
-- [x] README.md
+- [x] scripts/start.ps1 + scripts/stop.ps1 (Windows)
+- [x] README.md (Windows notes: ExecutionPolicy, host.docker.internal, BLE constraint, Task Scheduler)
 
 ## Known Limitations
 
