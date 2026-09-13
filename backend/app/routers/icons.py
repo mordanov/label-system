@@ -19,7 +19,7 @@ async def list_icons(current_user: str = Depends(get_current_user)):
 
 
 @router.get("/{filename}")
-async def get_icon(filename: str, current_user: str = Depends(get_current_user)):
+async def get_icon(filename: str):
     # Prevent path traversal
     path = (ICONS_DIR / filename).resolve()
     if not path.is_relative_to(ICONS_DIR.resolve()):

@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 import uuid
 
 from ..database import get_db
@@ -23,15 +24,24 @@ async def create_product(
     db: AsyncSession = Depends(get_db),
     current_user: str = Depends(get_current_user),
 ):
-    async with db.begin():
-        inv = await next_inventory_number(db)
-        product = Product(name=body.name, icon_filename=body.icon_filename, inventory_number=inv)
-        db.add(product)
+    for attempt in range(2):
+        try:
+            async with db.begin():
+                inv = await next_inventory_number(db)
+                product = Product(name=body.name, icon_filename=body.icon_filename, inventory_number=inv)
+                db.add(product)
+            await db.refresh(product)
+            break
+        except IntegrityError:
+            if attempt == 1:
+                raise
+            await db.rollback()
 
-    await db.refresh(product)
-
-    icon_path = ICONS_DIR / product.icon_filename
-    icon_bytes = icon_path.read_bytes() if icon_path.exists() else b""
+    icon_path = (ICONS_DIR / product.icon_filename).resolve()
+    if not icon_path.is_relative_to(ICONS_DIR.resolve()):
+        icon_bytes = None
+    else:
+        icon_bytes = icon_path.read_bytes() if icon_path.exists() else None
     print_ok = await send_to_printer(
         inventory_number=product.inventory_number,
         name=product.name,
@@ -72,8 +82,11 @@ async def reprint_product(
     if not product or product.is_deleted:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    icon_path = ICONS_DIR / product.icon_filename
-    icon_bytes = icon_path.read_bytes() if icon_path.exists() else b""
+    icon_path = (ICONS_DIR / product.icon_filename).resolve()
+    if not icon_path.is_relative_to(ICONS_DIR.resolve()):
+        icon_bytes = None
+    else:
+        icon_bytes = icon_path.read_bytes() if icon_path.exists() else None
     print_ok = await send_to_printer(
         inventory_number=product.inventory_number,
         name=product.name,
