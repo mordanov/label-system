@@ -1,0 +1,25 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #111; }
+
+.login-wrap {
+  max-width: 320px; margin: 10vh auto; padding: 2rem;
+  background: white; border-radius: 8px; box-shadow: 0 2px 8px #0002;
+}
+.login-wrap h2 { margin-bottom: 1.5rem; }
+.login-wrap input, .login-wrap button {
+  display: block; width: 100%; padding: 0.6rem 0.8rem;
+  margin-bottom: 0.75rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem;
+}
+.login-wrap button { background: #2563eb; color: white; border: none; cursor: pointer; }
+.login-wrap button:hover { background: #1d4ed8; }
+.error { color: #dc2626; margin-bottom: 0.5rem; font-size: 0.875rem; }
+
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 1.5rem; background: white; border-bottom: 1px solid #e5e7eb;
+}
+header h1 { font-size: 1.25rem; }
+header button { padding: 0.4rem 0.8rem; cursor: pointer; }
+
+main { padding: 1.5rem; }
