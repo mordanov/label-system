@@ -7,18 +7,23 @@ export default function CreateForm({ onCreated }) {
   const [icon, setIcon] = useState('')
   const [busy, setBusy] = useState(false)
   const [warn, setWarn] = useState(false)
+  const [error, setError] = useState(null)
+  const [saved, setSaved] = useState(false)
 
   async function handleSubmit(e) {
     e.preventDefault()
-    setBusy(true); setWarn(false)
+    setBusy(true); setWarn(false); setError(null); setSaved(false)
     try {
       const product = await apiFetch('/products', {
         method: 'POST',
         body: JSON.stringify({ name, icon_filename: icon }),
       })
       if (product.print_warning) setWarn(true)
+      setSaved(true)
       setName('')
       onCreated(product)
+    } catch(err) {
+      setError(err.message || 'Failed to save')
     } finally {
       setBusy(false)
     }
@@ -33,6 +38,8 @@ export default function CreateForm({ onCreated }) {
       />
       <IconGallery value={icon} onChange={setIcon} />
       {warn && <p className="warn">Saved, but printing failed — use Reprint.</p>}
+      {saved && <p>Saved!</p>}
+      {error && <p className="error">{error}</p>}
       <button type="submit" disabled={busy || !icon}>
         {busy ? 'Saving…' : 'Add & Print'}
       </button>
