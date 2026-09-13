@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { hasCredentials, clearCredentials } from './api'
 import LoginForm from './components/LoginForm'
 import CreateForm from './components/CreateForm'
+import ProductTable from './components/ProductTable'
 
 function MainView({ onLogout }) {
   const [refresh, setRefresh] = useState(0)
@@ -14,8 +15,7 @@ function MainView({ onLogout }) {
       </header>
       <main>
         <CreateForm onCreated={() => setRefresh(r => r + 1)} />
-        {/* ProductTable added in Task 9 */}
-        <p style={{color:'#888'}}>Product table coming soon…</p>
+        <ProductTable refresh={refresh} />
       </main>
     </div>
   )

@@ -46,3 +46,27 @@ main { padding: 1.5rem; }
 }
 .create-form button:disabled { background: #93c5fd; cursor: default; }
 .warn { color: #d97706; font-size: 0.875rem; margin-bottom: 0.5rem; }
+
+.search-bar { margin-bottom: 1rem; }
+.search-bar input {
+  padding: 0.5rem 0.8rem; border: 1px solid #ccc; border-radius: 4px;
+  font-size: 1rem; width: 300px;
+}
+.table-toolbar { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 0.75rem; }
+.toggle-deleted { font-size: 0.9rem; cursor: pointer; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
+th, td { padding: 0.65rem 1rem; text-align: left; border-bottom: 1px solid #e5e7eb; font-size: 0.9rem; }
+th { background: #f9fafb; font-weight: 600; }
+.deleted-row td { color: #9ca3af; }
+.deleted-row td:nth-child(3) { text-decoration: line-through; }
+.status-active { color: #16a34a; }
+.status-deleted { color: #6b7280; font-size: 0.8rem; }
+td button {
+  padding: 0.3rem 0.6rem; border: 1px solid #d1d5db; background: white;
+  border-radius: 4px; cursor: pointer; font-size: 0.8rem;
+}
+td button:hover { background: #f3f4f6; }
+td button.btn-danger { color: #dc2626; border-color: #fca5a5; }
+td button.btn-danger:hover { background: #fef2f2; }
+td button:disabled { opacity: 0.5; cursor: default; }
