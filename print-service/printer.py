@@ -9,6 +9,8 @@ from PIL import Image
 
 # bleak imported lazily inside print_label so protocol helpers are importable
 # without the BLE stack installed (useful in CI / unit-test environments).
+# bleak backend is platform-abstracted (CoreBluetooth on macOS, WinRT on Windows) —
+# no platform-specific code needed here.
 
 CONTROL_WRITE_UUID = "0000ae01-0000-1000-8000-00805f9b34fb"
 NOTIFY_UUID        = "0000ae02-0000-1000-8000-00805f9b34fb"
