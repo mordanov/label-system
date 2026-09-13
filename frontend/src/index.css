@@ -1,0 +1,72 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #111; }
+
+.login-wrap {
+  max-width: 320px; margin: 10vh auto; padding: 2rem;
+  background: white; border-radius: 8px; box-shadow: 0 2px 8px #0002;
+}
+.login-wrap h2 { margin-bottom: 1.5rem; }
+.login-wrap input, .login-wrap button {
+  display: block; width: 100%; padding: 0.6rem 0.8rem;
+  margin-bottom: 0.75rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem;
+}
+.login-wrap button { background: #2563eb; color: white; border: none; cursor: pointer; }
+.login-wrap button:hover { background: #1d4ed8; }
+.error { color: #dc2626; margin-bottom: 0.5rem; font-size: 0.875rem; }
+
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 1.5rem; background: white; border-bottom: 1px solid #e5e7eb;
+}
+header h1 { font-size: 1.25rem; }
+header button { padding: 0.4rem 0.8rem; cursor: pointer; }
+
+main { padding: 1.5rem; }
+
+.icon-gallery { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.75rem 0; }
+.icon-btn {
+  border: 2px solid #e5e7eb; border-radius: 6px; padding: 4px;
+  background: white; cursor: pointer;
+}
+.icon-btn.selected { border-color: #2563eb; background: #eff6ff; }
+
+.create-form {
+  background: white; padding: 1.5rem; border-radius: 8px;
+  box-shadow: 0 1px 4px #0001; margin-bottom: 1.5rem; max-width: 600px;
+}
+.create-form h2 { margin-bottom: 1rem; font-size: 1.1rem; }
+.create-form input {
+  width: 100%; padding: 0.6rem 0.8rem; border: 1px solid #ccc;
+  border-radius: 4px; font-size: 1rem; margin-bottom: 0.5rem;
+}
+.create-form button {
+  padding: 0.6rem 1.25rem; background: #2563eb; color: white;
+  border: none; border-radius: 4px; cursor: pointer; font-size: 1rem;
+}
+.create-form button:disabled { background: #93c5fd; cursor: default; }
+.warn { color: #d97706; font-size: 0.875rem; margin-bottom: 0.5rem; }
+
+.search-bar { margin-bottom: 1rem; }
+.search-bar input {
+  padding: 0.5rem 0.8rem; border: 1px solid #ccc; border-radius: 4px;
+  font-size: 1rem; width: 300px;
+}
+.table-toolbar { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 0.75rem; }
+.toggle-deleted { font-size: 0.9rem; cursor: pointer; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
+th, td { padding: 0.65rem 1rem; text-align: left; border-bottom: 1px solid #e5e7eb; font-size: 0.9rem; }
+th { background: #f9fafb; font-weight: 600; }
+.deleted-row td { color: #9ca3af; }
+.deleted-row td:nth-child(3) { text-decoration: line-through; }
+.status-active { color: #16a34a; }
+.status-deleted { color: #6b7280; font-size: 0.8rem; }
+td button {
+  padding: 0.3rem 0.6rem; border: 1px solid #d1d5db; background: white;
+  border-radius: 4px; cursor: pointer; font-size: 0.8rem;
+}
+td button:hover { background: #f3f4f6; }
+td button.btn-danger { color: #dc2626; border-color: #fca5a5; }
+td button.btn-danger:hover { background: #fef2f2; }
+td button:disabled { opacity: 0.5; cursor: default; }
