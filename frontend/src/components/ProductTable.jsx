@@ -2,9 +2,7 @@ import { useEffect, useState } from 'react'
 import { apiFetch } from '../api'
 import SearchBar from './SearchBar'
 
-function fmt(iso) {
-  return iso ? new Date(iso).toLocaleDateString() : ''
-}
+const fmt = iso => iso ? new Date(iso).toISOString().slice(0, 10) : ''
 
 export default function ProductTable({ refresh }) {
   const [products, setProducts] = useState([])
