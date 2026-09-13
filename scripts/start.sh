@@ -15,7 +15,7 @@ docker compose -f "$REPO_ROOT/docker-compose.yml" up -d
 # Ensure print-service venv + deps
 if [ ! -f "$PRINT_DIR/.venv/bin/python" ]; then
   echo "==> Creating print-service virtualenv…"
-  python3.13 -m venv "$PRINT_DIR/.venv"
+  python3 -m venv "$PRINT_DIR/.venv"
 fi
 if ! "$PRINT_DIR/.venv/bin/pip" show fastapi &>/dev/null; then
   echo "==> Installing print-service dependencies…"

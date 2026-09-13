@@ -9,7 +9,7 @@ if [ -f "$PID_FILE" ]; then
   PID="$(cat "$PID_FILE")"
   if kill -0 "$PID" 2>/dev/null; then
     echo "==> Stopping print-service (PID $PID)…"
-    kill "$PID"
+    kill "$PID" || true
   else
     echo "==> print-service not running (stale PID file)"
   fi
