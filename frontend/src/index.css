@@ -34,7 +34,7 @@ header button { padding: 0.4rem 0.8rem; cursor: pointer; }
 
 main { padding: 1.5rem; }
 
-.icon-gallery { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.75rem 0; }
+.icon-gallery { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 0.5rem; margin: 0.75rem 0; padding-bottom: 4px; }
 .icon-btn {
   border: 2px solid #e5e7eb; border-radius: 6px; padding: 4px;
   background: white; cursor: pointer;

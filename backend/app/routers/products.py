@@ -73,7 +73,8 @@ async def create_products_bulk(
                     inv = await next_inventory_number(db)
                     product = Product(name=item.name, icon_filename=item.icon_filename, inventory_number=inv)
                     db.add(product)
-                await db.refresh(product)
+                    await db.flush()
+                    await db.refresh(product)
                 created.append(product)
                 break
             except IntegrityError:
