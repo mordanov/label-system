@@ -92,7 +92,12 @@ async def create_products_bulk(
     credentials: HTTPBasicCredentials = Depends(security),
     _: str = Depends(get_current_user),
 ):
-    return await _forward("POST", "/products/bulk", credentials, json_body=body)
+    products = await _forward("POST", "/products/bulk", credentials, json_body=body)
+    if settings.print_enabled:
+        for product in products:
+            print_ok = await _print_product(product)
+            product["print_warning"] = not print_ok
+    return products
 
 
 @router.post("/{product_id}/reprint", response_model=ProductResponse)

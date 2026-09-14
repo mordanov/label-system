@@ -158,7 +158,7 @@ async def print_label(ble_address: str, label_png: bytes) -> None:
         logger.info("Sending %d rows (%d bytes, %d chunks)…", height, len(image_data), len(chunks))
         for i in chunks:
             await client.write_gatt_char(DATA_WRITE_UUID, image_data[i : i + 20], response=False)
-            await asyncio.sleep(0.001)
+            await asyncio.sleep(0.003)
         logger.info("Data sent in %.1fs", time.monotonic() - t)
 
         # Step 4: AD finalize, wait for print-done notification
