@@ -12,16 +12,12 @@ function parseXlsx(file) {
         const wb = XLSX.read(e.target.result, { type: 'array' })
         const ws = wb.Sheets[wb.SheetNames[0]]
         const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
-        const seen = new Set()
         const names = []
-        let totalRows = 0
         for (let i = 1; i < rows.length; i++) {
           const v = String(rows[i][1] ?? '').trim()
-          if (!v) continue
-          totalRows++
-          if (!seen.has(v)) { seen.add(v); names.push(v) }
+          if (v) names.push(v)
         }
-        resolve({ names, totalRows })
+        resolve({ names, totalRows: names.length })
       } catch (err) {
         reject(err)
       }
@@ -54,7 +50,7 @@ export default function ImportPanel({ onCreated, onClose }) {
       const { names: parsed, totalRows: total } = await parseXlsx(file)
       setNames(parsed)
       setTotalRows(total)
-      setChecked(new Set(parsed))
+      setChecked(new Set(parsed.map((_, i) => i)))
     } catch (err) {
       setError(err.message || t('importFailed'))
     } finally {
@@ -63,10 +59,10 @@ export default function ImportPanel({ onCreated, onClose }) {
     e.target.value = ''
   }
 
-  function toggle(name) {
+  function toggle(i) {
     setChecked(s => {
       const n = new Set(s)
-      n.has(name) ? n.delete(name) : n.add(name)
+      n.has(i) ? n.delete(i) : n.add(i)
       return n
     })
   }
@@ -75,12 +71,13 @@ export default function ImportPanel({ onCreated, onClose }) {
     if (checked.size === 0) return
     setBusy(true); setResult(null); setError(null)
     try {
-      const items = [...checked].map(name => ({ name, icon_filename: icon }))
+      const items = [...checked].sort((a, b) => a - b).map(i => ({ name: names[i], icon_filename: icon }))
       const created = await apiFetch('/products/bulk', {
         method: 'POST',
         body: JSON.stringify({ items }),
       })
       setResult(created.length)
+      setNames([])
       setChecked(new Set())
       onCreated()
     } catch (err) {
@@ -89,8 +86,6 @@ export default function ImportPanel({ onCreated, onClose }) {
       setBusy(false)
     }
   }
-
-  const dupCount = totalRows - names.length
 
   return (
     <>
@@ -113,12 +108,9 @@ export default function ImportPanel({ onCreated, onClose }) {
 
       {!parsing && names.length > 0 && (
         <>
-          <p className="import-hint">
-            {t('importFound', { n: names.length })}
-            {dupCount > 0 && <span className="import-dup"> ({t('importDups', { n: dupCount })})</span>}
-          </p>
+          <p className="import-hint">{t('importFound', { n: names.length })}</p>
           <div className="import-toolbar">
-            <button type="button" className="btn-link" onClick={() => setChecked(new Set(names))}>
+            <button type="button" className="btn-link" onClick={() => setChecked(new Set(names.map((_, i) => i)))}>
               {t('importSelectAll')}
             </button>
             <button type="button" className="btn-link" onClick={() => setChecked(new Set())}>
@@ -127,9 +119,9 @@ export default function ImportPanel({ onCreated, onClose }) {
           </div>
 
           <div className="import-name-list">
-            {names.map(name => (
-              <label key={name} className="import-name-item">
-                <input type="checkbox" checked={checked.has(name)} onChange={() => toggle(name)} />
+            {names.map((name, i) => (
+              <label key={i} className="import-name-item">
+                <input type="checkbox" checked={checked.has(i)} onChange={() => toggle(i)} />
                 <span>{name}</span>
               </label>
             ))}
