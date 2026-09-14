@@ -5,14 +5,19 @@ export default function IconGallery({ value, onChange }) {
   const [icons, setIcons] = useState([])
 
   useEffect(() => {
-    apiFetch('/icons').then(list => {
-      setIcons(list.map(i => i.filename))
-      if (!value && list.length) onChange(list[0].filename)
-    })
+    apiFetch('/icons').then(list => setIcons(list.map(i => i.filename)))
   }, [])
 
   return (
     <div className="icon-gallery">
+      <button
+        type="button"
+        className={`icon-btn icon-btn-none${!value ? ' selected' : ''}`}
+        onClick={() => onChange('')}
+        title="No icon"
+      >
+        <span>—</span>
+      </button>
       {icons.map(filename => (
         <button
           key={filename}

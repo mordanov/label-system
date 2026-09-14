@@ -94,7 +94,7 @@ export default function CreateForm({ onCreated, printEnabled = true }) {
           {showGen ? t('hideGenerator') : t('generateIcon')}
         </button>
         <div className="form-submit-row">
-          <button type="submit" disabled={busy || !icon}>{btnLabel}</button>
+          <button type="submit" disabled={busy}>{btnLabel}</button>
           <input
             type="number" min={1} max={99} value={qty}
             onChange={e => setQty(Math.max(1, Math.min(99, parseInt(e.target.value) || 1)))}

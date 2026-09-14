@@ -40,6 +40,8 @@ main { padding: 1.5rem; }
   background: white; cursor: pointer;
 }
 .icon-btn.selected { border-color: #2563eb; background: #eff6ff; }
+.icon-btn-none { width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 1.25rem; }
+.icon-btn-none.selected { color: #2563eb; }
 
 .create-form {
   background: white; padding: 1.5rem; border-radius: 8px;
