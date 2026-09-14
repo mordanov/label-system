@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .routers import products, icons
+from .config import settings
 
 app = FastAPI(title="Label System")
 
@@ -17,3 +18,7 @@ app.include_router(icons.router)
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+@app.get("/config")
+async def config():
+    return {"print_enabled": settings.print_enabled}

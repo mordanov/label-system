@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     print_service_url: str = "http://host.docker.internal:9100"
     openai_api_key: str = ""
     openai_image_model: str = "gpt-image-1"
+    print_enabled: bool = True
 
     class Config:
         env_file = ".env"

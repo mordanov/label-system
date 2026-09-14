@@ -12,6 +12,7 @@ from ..schemas import ProductCreate, ProductResponse
 from ..auth import get_current_user
 from ..services.inventory import next_inventory_number
 from ..services.print_client import send_to_printer
+from ..config import settings
 
 router = APIRouter(prefix="/products", tags=["products"])
 
@@ -37,18 +38,21 @@ async def create_product(
                 raise
             await db.rollback()
 
-    icon_path = (ICONS_DIR / product.icon_filename).resolve()
-    if not icon_path.is_relative_to(ICONS_DIR.resolve()):
-        icon_bytes = None
+    if settings.print_enabled:
+        icon_path = (ICONS_DIR / product.icon_filename).resolve()
+        if not icon_path.is_relative_to(ICONS_DIR.resolve()):
+            icon_bytes = None
+        else:
+            icon_bytes = icon_path.read_bytes() if icon_path.exists() else None
+        print_ok = await send_to_printer(
+            inventory_number=product.inventory_number,
+            name=product.name,
+            created_at=product.created_at.strftime("%Y-%m-%d"),
+            icon_filename=product.icon_filename,
+            icon_bytes=icon_bytes,
+        )
     else:
-        icon_bytes = icon_path.read_bytes() if icon_path.exists() else None
-    print_ok = await send_to_printer(
-        inventory_number=product.inventory_number,
-        name=product.name,
-        created_at=product.created_at.strftime("%Y-%m-%d"),
-        icon_filename=product.icon_filename,
-        icon_bytes=icon_bytes,
-    )
+        print_ok = True
 
     resp = ProductResponse.model_validate(product)
     resp.print_warning = not print_ok
@@ -82,18 +86,21 @@ async def reprint_product(
     if not product or product.is_deleted:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    icon_path = (ICONS_DIR / product.icon_filename).resolve()
-    if not icon_path.is_relative_to(ICONS_DIR.resolve()):
-        icon_bytes = None
+    if settings.print_enabled:
+        icon_path = (ICONS_DIR / product.icon_filename).resolve()
+        if not icon_path.is_relative_to(ICONS_DIR.resolve()):
+            icon_bytes = None
+        else:
+            icon_bytes = icon_path.read_bytes() if icon_path.exists() else None
+        print_ok = await send_to_printer(
+            inventory_number=product.inventory_number,
+            name=product.name,
+            created_at=product.created_at.strftime("%Y-%m-%d"),
+            icon_filename=product.icon_filename,
+            icon_bytes=icon_bytes,
+        )
     else:
-        icon_bytes = icon_path.read_bytes() if icon_path.exists() else None
-    print_ok = await send_to_printer(
-        inventory_number=product.inventory_number,
-        name=product.name,
-        created_at=product.created_at.strftime("%Y-%m-%d"),
-        icon_filename=product.icon_filename,
-        icon_bytes=icon_bytes,
-    )
+        print_ok = True
 
     resp = ProductResponse.model_validate(product)
     resp.print_warning = not print_ok
