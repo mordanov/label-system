@@ -41,6 +41,23 @@ class LabelLayout:
     date_font_size: int = 18
 
 
+def _wrap_text(text: str, font, max_width: int) -> list[str]:
+    words = text.split()
+    lines: list[str] = []
+    current = ""
+    for word in words:
+        candidate = f"{current} {word}".strip()
+        if font.getlength(candidate) <= max_width:
+            current = candidate
+        else:
+            if current:
+                lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+    return lines or [""]
+
+
 def render_label(
     inventory_number: str,
     name: str,
@@ -61,10 +78,14 @@ def render_label(
         bg.paste(icon, mask=icon.split()[3])
         img.paste(bg, (layout.icon_x, layout.icon_y))
 
-    draw.text((layout.name_x, layout.name_y), name[:30], fill="black", font=_font(layout.name_font_size))
+    name_font = _font(layout.name_font_size)
+    name_max_w = LABEL_WIDTH - layout.name_x - 8
+    name_lines = _wrap_text(name, name_font, name_max_w)
+    line_h = int(layout.name_font_size * 1.25)
+    for i, line in enumerate(name_lines):
+        draw.text((layout.name_x, layout.name_y + i * line_h), line, fill="black", font=name_font)
 
     draw.text((layout.number_x, layout.number_y), f"#{inventory_number}", fill="black", font=_font(layout.number_font_size))
-
     draw.text((layout.date_x, layout.date_y), str(created_at), fill="black", font=_font(layout.date_font_size))
 
     out = BytesIO()
