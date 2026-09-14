@@ -8,7 +8,7 @@ import uuid
 
 from ..database import get_db
 from ..models import Product
-from ..schemas import ProductCreate, ProductResponse
+from ..schemas import ProductCreate, ProductBulkCreate, ProductResponse
 from ..auth import get_current_user
 from ..services.inventory import next_inventory_number
 from ..services.print_client import send_to_printer
@@ -57,6 +57,30 @@ async def create_product(
     resp = ProductResponse.model_validate(product)
     resp.print_warning = not print_ok
     return resp
+
+
+@router.post("/bulk", response_model=list[ProductResponse])
+async def create_products_bulk(
+    body: ProductBulkCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+):
+    created = []
+    for item in body.items:
+        for attempt in range(2):
+            try:
+                async with db.begin():
+                    inv = await next_inventory_number(db)
+                    product = Product(name=item.name, icon_filename=item.icon_filename, inventory_number=inv)
+                    db.add(product)
+                await db.refresh(product)
+                created.append(product)
+                break
+            except IntegrityError:
+                if attempt == 1:
+                    raise
+                await db.rollback()
+    return [ProductResponse.model_validate(p) for p in created]
 
 
 @router.get("/", response_model=list[ProductResponse])

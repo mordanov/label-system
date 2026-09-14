@@ -55,6 +55,24 @@ main { padding: 1.5rem; }
   border: none; border-radius: 4px; cursor: pointer; font-size: 1rem;
 }
 .create-form button:disabled { background: #93c5fd; cursor: default; }
+.btn-secondary {
+  padding: 0.5rem 1rem; background: white; color: #374151;
+  border: 1px solid #d1d5db; border-radius: 4px; cursor: pointer; font-size: 0.9rem;
+}
+.btn-secondary:hover { background: #f9fafb; }
+.btn-link {
+  background: none; border: none; cursor: pointer; color: #2563eb;
+  font-size: 0.85rem; padding: 0; text-decoration: underline;
+}
+.form-actions {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 0.75rem; margin-top: 0.75rem; flex-wrap: wrap;
+}
+.form-submit-row { display: flex; align-items: center; gap: 0.5rem; }
+.qty-input {
+  width: 3.5rem; padding: 0.6rem 0.5rem; border: 1px solid #ccc;
+  border-radius: 4px; font-size: 1rem; text-align: center;
+}
 .warn { color: #d97706; font-size: 0.875rem; margin-bottom: 0.5rem; }
 
 .search-bar { margin-bottom: 1rem; }
@@ -80,3 +98,31 @@ td button:hover { background: #f3f4f6; }
 td button.btn-danger { color: #dc2626; border-color: #fca5a5; }
 td button.btn-danger:hover { background: #fef2f2; }
 td button:disabled { opacity: 0.5; cursor: default; }
+
+.import-panel {
+  background: white; padding: 1.5rem; border-radius: 8px;
+  box-shadow: 0 1px 4px #0001; margin-bottom: 1.5rem; max-width: 600px;
+}
+.import-panel h2 { margin-bottom: 1rem; font-size: 1.1rem; }
+.import-file-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.import-filename { font-size: 0.875rem; color: #6b7280; }
+.import-icon-section { margin-bottom: 0.75rem; }
+.import-label { font-size: 0.875rem; color: #374151; margin-bottom: 0.4rem; }
+.import-toolbar { display: flex; gap: 1rem; margin-bottom: 0.5rem; }
+.import-name-list {
+  max-height: 220px; overflow-y: auto; border: 1px solid #e5e7eb;
+  border-radius: 4px; padding: 0.5rem; margin-bottom: 0.75rem;
+}
+.import-name-item {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.3rem 0.25rem; cursor: pointer; font-size: 0.9rem; user-select: none;
+}
+.import-name-item:hover { background: #f9fafb; border-radius: 3px; }
+.import-panel button[type="button"]:not(.btn-secondary):not(.btn-link) {
+  padding: 0.6rem 1.25rem; background: #2563eb; color: white;
+  border: none; border-radius: 4px; cursor: pointer; font-size: 1rem;
+}
+.import-panel button[type="button"]:not(.btn-secondary):not(.btn-link):disabled {
+  background: #93c5fd; cursor: default;
+}
+.import-success { color: #16a34a; font-size: 0.875rem; margin-top: 0.5rem; }

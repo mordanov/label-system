@@ -6,6 +6,9 @@ class ProductCreate(BaseModel):
     name: str
     icon_filename: str
 
+class ProductBulkCreate(BaseModel):
+    items: list[ProductCreate]
+
 class ProductResponse(BaseModel):
     id: uuid.UUID
     inventory_number: str
