@@ -118,7 +118,7 @@ export default function CreateForm({ onCreated, printEnabled = true }) {
             onChange={e => setGenName(e.target.value)}
             placeholder={t('describeIcon')}
           />
-          <button type="button" onClick={handleGenerate} disabled={genBusy}>
+          <button type="button" onClick={() => handleGenerate()} disabled={genBusy}>
             {genBusy ? t('generating') : t('generate')}
           </button>
           {genError && <p className="error">{genError}</p>}
