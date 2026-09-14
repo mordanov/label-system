@@ -81,7 +81,11 @@ async def print_label(ble_address: str, label_png: bytes) -> None:
                 raise TimeoutError(f"Timeout waiting for notification 0x{cmd_id:02X}")
             await asyncio.sleep(0.05)
 
-    async with bleak.BleakClient(ble_address) as client:
+    device = await bleak.BleakScanner.find_device_by_address(ble_address, timeout=10.0)
+    if device is None:
+        raise RuntimeError(f"Device {ble_address} not found during BLE scan (is it on and in range?)")
+
+    async with bleak.BleakClient(device) as client:
         await client.start_notify(NOTIFY_UUID, _on_notify)
 
         # Step 1: B1 → A2 → A1, then wait for A1 ready notification
