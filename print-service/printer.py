@@ -3,8 +3,12 @@ MXW01 BLE thermal printer driver.
 Protocol adapted from: https://github.com/mordanov/MXW01_Thermal-Printer-Tool
 """
 import asyncio
+import logging
 import re
+import time
 from io import BytesIO
+
+logger = logging.getLogger("print_service.ble")
 
 from PIL import Image
 
@@ -77,17 +81,23 @@ async def _resolve_device(ble_address: str, bleak_mod: object) -> object:
 
     # Name or CoreBluetooth UUID: try cached address first (no scan needed)
     if _cached_ble_address:
+        t = time.monotonic()
         device = await bleak.BleakScanner.find_device_by_address(_cached_ble_address, timeout=5.0)
         if device is not None:
+            logger.info("BLE device found via cache in %.1fs (addr=%s)", time.monotonic() - t, device.address)
             return device
-        _cached_ble_address = None  # stale — fall through to full scan
+        logger.info("BLE cache miss (%.1fs) — falling back to full scan", time.monotonic() - t)
+        _cached_ble_address = None
 
-    # Full discovery scan (only on first use or after cache expires)
+    # Full discovery scan (only on first use or after cache miss)
+    t = time.monotonic()
     found = await bleak.BleakScanner.discover(timeout=10.0)
     device = next((d for d in found if d.address == ble_address or d.name == ble_address), None)
     if device is None:
         raise RuntimeError(f"Device '{ble_address}' not found during BLE scan (is it on and in range?)")
-    _cached_ble_address = device.address  # cache CoreBluetooth UUID for next time
+    _cached_ble_address = device.address
+    logger.info("BLE device found via scan in %.1fs: %s rssi=%s (addr=%s cached)",
+                time.monotonic() - t, device.name, device.rssi, device.address)
     return device
 
 
@@ -118,36 +128,41 @@ async def print_label(ble_address: str, label_png: bytes) -> None:
 
     device = await _resolve_device(ble_address, bleak)
 
+    t_connect = time.monotonic()
     async with bleak.BleakClient(device) as client:
+        logger.info("BLE connected in %.1fs", time.monotonic() - t_connect)
         await client.start_notify(NOTIFY_UUID, _on_notify)
 
-        # Step 1: B1 → A2 → A1, then wait for A1 ready notification
+        # Step 1: B1 → A2 → A1, wait for printer-ready notification
+        t = time.monotonic()
         for cmd_id, data in [(0xB1, b""), (0xA2, bytes([0x5D])), (0xA1, bytes([0x00]))]:
             await client.write_gatt_char(CONTROL_WRITE_UUID, _pkt(cmd_id, data, use_crc=True), response=False)
             await asyncio.sleep(0.01)
-
         payload = await _wait(0xA1, 7.0)
         if len(payload) <= 6 or payload[6] != 0:
             raise RuntimeError(f"Printer not ready (A1 payload={payload.hex()})")
+        logger.info("Handshake ready in %.1fs", time.monotonic() - t)
 
-        # Step 2: A2 → A9 (A9 without CRC), wait for A9 OK
+        # Step 2: A2 → A9, wait for print-start OK
         a9_data = height.to_bytes(2, "little") + (48).to_bytes(2, "little")
         await client.write_gatt_char(CONTROL_WRITE_UUID, _pkt(0xA2, bytes([0x5D]), use_crc=True), response=False)
         await asyncio.sleep(0.01)
         await client.write_gatt_char(CONTROL_WRITE_UUID, _pkt(0xA9, a9_data, use_crc=False), response=False)
-
         payload = await _wait(0xA9, 7.0)
         if not payload or payload[0] != 0:
             raise RuntimeError(f"Print start rejected (A9 payload={payload.hex()})")
 
-        # Step 3: image data to DATA characteristic in 20-byte chunks
-        # DATA characteristic is write-without-response only (CBATTErrorDomain Code=3
-        # if response=True). Pace writes with a small sleep to avoid overflowing
-        # the printer's BLE receive buffer on macOS CoreBluetooth.
-        for i in range(0, len(image_data), 20):
+        # Step 3: image data — write-without-response, paced to avoid buffer overflow
+        t = time.monotonic()
+        chunks = range(0, len(image_data), 20)
+        logger.info("Sending %d rows (%d bytes, %d chunks)…", height, len(image_data), len(chunks))
+        for i in chunks:
             await client.write_gatt_char(DATA_WRITE_UUID, image_data[i : i + 20], response=False)
             await asyncio.sleep(0.001)
+        logger.info("Data sent in %.1fs", time.monotonic() - t)
 
-        # Step 4: AD finalize, wait AA print-done notification
+        # Step 4: AD finalize, wait for print-done notification
+        t = time.monotonic()
         await client.write_gatt_char(CONTROL_WRITE_UUID, _pkt(0xAD, bytes([0x00]), use_crc=False), response=False)
         await _wait(0xAA, max(30.0, height / 10.0))
+        logger.info("Printed in %.1fs", time.monotonic() - t)
