@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .routers import products, icons
 from .config import settings
 
-app = FastAPI(title="Label System")
+app = FastAPI(title="Label System", redirect_slashes=False)
 
 app.add_middleware(
     CORSMiddleware,
