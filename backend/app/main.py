@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routers import products, icons
+from .routers import icons
 from .config import settings
 
 app = FastAPI(title="Label System", redirect_slashes=False)
@@ -12,7 +12,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(products.router)
+if settings.remote_backend_url:
+    from .routers import proxy
+    app.include_router(proxy.router)
+else:
+    from .routers import products
+    app.include_router(products.router)
+
 app.include_router(icons.router)
 
 @app.get("/health")

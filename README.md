@@ -122,24 +122,27 @@ Run the same codebase on a VPS (without printer). The shared PostgreSQL on the V
 
 **On VPS** — add to `.env`:
 ```
-DB_HOST=localhost   # or postgres container name
+DB_HOST=recipes-db   # postgres container name in the VPS Docker network
 PRINT_ENABLED=false
 ```
 
 Start only backend and frontend (skip the `db` service — use the existing VPS postgres):
 ```bash
-docker compose up -d --no-deps backend frontend
+docker-compose up -d --no-deps backend frontend
 ```
 
-**On local machine** — the VPS postgres is not publicly exposed, so access it via SSH tunnel:
+**On local machine with printer** — the VPS postgres is not publicly exposed, so the local backend proxies all DB operations through the VPS backend over HTTPS. Add to `.env`:
+```
+REMOTE_BACKEND_URL=https://<your-vps-domain>
+PRINT_ENABLED=true
+```
 
+Then start as usual:
 ```bash
-./scripts/start.sh --tunnel
+./scripts/start.sh
 ```
 
-`--tunnel` opens `ssh -L 5433:recipes-db:5432 deploy@<VPS>` in the background and tells the local backend to connect through it. The tunnel PID is saved to `.ssh-tunnel.pid` and killed/restarted automatically on the next `start.sh --tunnel` run.
-
-Requires `~/.ssh/id_servinga` (the VPS deploy key). The local `db` container still starts but is unused — the backend routes to VPS postgres instead.
+How it works: when `REMOTE_BACKEND_URL` is set, the local backend forwards all product API calls to the VPS backend (which has the DB connection). For create and reprint operations, the local backend additionally triggers the local BLE printer. The local `db` container still starts but is unused.
 
 With `PRINT_ENABLED=false`, the web UI shows "Add" instead of "Add & Print" and hides the Print button in the product table. All create/delete functionality remains available.
 

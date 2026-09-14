@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_image_model: str = "gpt-image-1"
     print_enabled: bool = True
+    remote_backend_url: str = ""  # e.g. https://labels.example.com — when set, proxy DB ops there
 
     class Config:
         env_file = ".env"
