@@ -38,6 +38,9 @@ export const messages = {
     importDone: 'Imported {n} products',
     importFailed: 'Import failed',
     importNoNames: 'No product names found in column B',
+    importFound: '{n} names found',
+    importDups: '{n} duplicates removed',
+    parsing: 'Parsing',
 
     showDeleted: 'Show deleted',
     colNum: '#',
@@ -95,6 +98,9 @@ export const messages = {
     importDone: 'Импортировано {n} продуктов',
     importFailed: 'Ошибка импорта',
     importNoNames: 'Не найдено названий в столбце B',
+    importFound: 'Найдено {n} названий',
+    importDups: '{n} дублей удалено',
+    parsing: 'Читаю файл',
 
     showDeleted: 'Показать удалённые',
     colNum: '№',

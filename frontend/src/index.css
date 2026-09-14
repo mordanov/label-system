@@ -151,3 +151,5 @@ td button:disabled { opacity: 0.5; cursor: default; }
   background: #93c5fd; cursor: default;
 }
 .import-success { color: #16a34a; font-size: 0.875rem; margin-top: 0.5rem; }
+.import-hint { font-size: 0.8rem; color: #6b7280; margin-bottom: 0.4rem; }
+.import-dup { color: #d97706; }

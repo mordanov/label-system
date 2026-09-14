@@ -14,11 +14,14 @@ function parseXlsx(file) {
         const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
         const seen = new Set()
         const names = []
+        let totalRows = 0
         for (let i = 1; i < rows.length; i++) {
           const v = String(rows[i][1] ?? '').trim()
-          if (v && !seen.has(v)) { seen.add(v); names.push(v) }
+          if (!v) continue
+          totalRows++
+          if (!seen.has(v)) { seen.add(v); names.push(v) }
         }
-        resolve(names)
+        resolve({ names, totalRows })
       } catch (err) {
         reject(err)
       }
@@ -33,8 +36,10 @@ export default function ImportPanel({ onCreated, onClose }) {
   const fileRef = useRef()
   const [fileName, setFileName] = useState('')
   const [names, setNames] = useState([])
+  const [totalRows, setTotalRows] = useState(0)
   const [checked, setChecked] = useState(new Set())
   const [icon, setIcon] = useState('')
+  const [parsing, setParsing] = useState(false)
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
@@ -42,14 +47,18 @@ export default function ImportPanel({ onCreated, onClose }) {
   async function handleFile(e) {
     const file = e.target.files[0]
     if (!file) return
-    setResult(null); setError(null); setNames([]); setChecked(new Set())
+    setResult(null); setError(null); setNames([]); setChecked(new Set()); setTotalRows(0)
     setFileName(file.name)
+    setParsing(true)
     try {
-      const parsed = await parseXlsx(file)
+      const { names: parsed, totalRows: total } = await parseXlsx(file)
       setNames(parsed)
+      setTotalRows(total)
       setChecked(new Set(parsed))
     } catch (err) {
       setError(err.message || t('importFailed'))
+    } finally {
+      setParsing(false)
     }
     e.target.value = ''
   }
@@ -81,6 +90,8 @@ export default function ImportPanel({ onCreated, onClose }) {
     }
   }
 
+  const dupCount = totalRows - names.length
+
   return (
     <>
       <h2>{t('importTitle')}</h2>
@@ -98,8 +109,14 @@ export default function ImportPanel({ onCreated, onClose }) {
         <IconGallery value={icon} onChange={setIcon} />
       </div>
 
-      {names.length > 0 && (
+      {parsing && <p className="import-hint">⏳ {t('parsing')}…</p>}
+
+      {!parsing && names.length > 0 && (
         <>
+          <p className="import-hint">
+            {t('importFound', { n: names.length })}
+            {dupCount > 0 && <span className="import-dup"> ({t('importDups', { n: dupCount })})</span>}
+          </p>
           <div className="import-toolbar">
             <button type="button" className="btn-link" onClick={() => setChecked(new Set(names))}>
               {t('importSelectAll')}
@@ -129,7 +146,7 @@ export default function ImportPanel({ onCreated, onClose }) {
         </>
       )}
 
-      {names.length === 0 && fileName && !error && (
+      {!parsing && names.length === 0 && fileName && !error && (
         <p className="warn">{t('importNoNames')}</p>
       )}
       {result !== null && <p className="import-success">{t('importDone', { n: result })}</p>}

@@ -3,10 +3,15 @@ import { apiFetch } from '../api'
 
 export default function IconGallery({ value, onChange }) {
   const [icons, setIcons] = useState([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    apiFetch('/icons').then(list => setIcons(list.map(i => i.filename)))
+    apiFetch('/icons')
+      .then(list => setIcons(list.map(i => i.filename)))
+      .finally(() => setLoading(false))
   }, [])
+
+  if (loading) return <p className="import-hint">⏳ …</p>
 
   return (
     <div className="icon-gallery">
