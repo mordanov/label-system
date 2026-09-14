@@ -81,9 +81,17 @@ async def print_label(ble_address: str, label_png: bytes) -> None:
                 raise TimeoutError(f"Timeout waiting for notification 0x{cmd_id:02X}")
             await asyncio.sleep(0.05)
 
-    device = await bleak.BleakScanner.find_device_by_address(ble_address, timeout=10.0)
+    import re
+    is_mac = bool(re.match(r'^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$', ble_address))
+    if is_mac:
+        # macOS CoreBluetooth hides MAC addresses — scan all and match by name as fallback
+        device = await bleak.BleakScanner.find_device_by_address(ble_address, timeout=10.0)
+    else:
+        # Name or CoreBluetooth UUID
+        found = await bleak.BleakScanner.discover(timeout=10.0)
+        device = next((d for d in found if d.address == ble_address or d.name == ble_address), None)
     if device is None:
-        raise RuntimeError(f"Device {ble_address} not found during BLE scan (is it on and in range?)")
+        raise RuntimeError(f"Device '{ble_address}' not found during BLE scan (is it on and in range?)")
 
     async with bleak.BleakClient(device) as client:
         await client.start_notify(NOTIFY_UUID, _on_notify)
