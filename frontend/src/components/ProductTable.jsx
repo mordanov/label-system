@@ -4,7 +4,7 @@ import SearchBar from './SearchBar'
 
 const fmt = iso => iso ? new Date(iso).toISOString().slice(0, 10) : ''
 
-export default function ProductTable({ refresh }) {
+export default function ProductTable({ refresh, printEnabled = true }) {
   const [products, setProducts] = useState([])
   const [q, setQ] = useState('')
   const [showDeleted, setShowDeleted] = useState(false)
@@ -72,10 +72,14 @@ export default function ProductTable({ refresh }) {
                 <td>
                   {!p.is_deleted && (
                     <>
-                      <button onClick={() => reprint(p.id)} disabled={!!busy[p.id]}>
-                        {busy[p.id] === 'reprint' ? '…' : 'Print'}
-                      </button>
-                      {' '}
+                      {printEnabled && (
+                        <>
+                          <button onClick={() => reprint(p.id)} disabled={!!busy[p.id]}>
+                            {busy[p.id] === 'reprint' ? '…' : 'Print'}
+                          </button>
+                          {' '}
+                        </>
+                      )}
                       <button className="btn-danger" onClick={() => del(p.id, p.name)} disabled={!!busy[p.id]}>
                         {busy[p.id] === 'delete' ? '…' : 'Delete'}
                       </button>

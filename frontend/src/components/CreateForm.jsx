@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { apiFetch } from '../api'
 import IconGallery from './IconGallery'
 
-export default function CreateForm({ onCreated }) {
+export default function CreateForm({ onCreated, printEnabled = true }) {
   const [name, setName] = useState('')
   const [icon, setIcon] = useState('')
   const [busy, setBusy] = useState(false)
@@ -107,11 +107,11 @@ export default function CreateForm({ onCreated }) {
         )}
       </div>
 
-      {warn && <p className="warn">Saved, but printing failed — use Reprint.</p>}
+      {warn && printEnabled && <p className="warn">Saved, but printing failed — use Reprint.</p>}
       {saved && <p>Saved!</p>}
       {error && <p className="error">{error}</p>}
       <button type="submit" disabled={busy || !icon}>
-        {busy ? 'Saving…' : 'Add & Print'}
+        {busy ? 'Saving…' : printEnabled ? 'Add & Print' : 'Add'}
       </button>
     </form>
   )

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { hasCredentials, clearCredentials } from './api'
 import LoginForm from './components/LoginForm'
 import CreateForm from './components/CreateForm'
@@ -6,6 +6,11 @@ import ProductTable from './components/ProductTable'
 
 function MainView({ onLogout }) {
   const [refresh, setRefresh] = useState(0)
+  const [printEnabled, setPrintEnabled] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/config').then(r => r.json()).then(c => setPrintEnabled(c.print_enabled))
+  }, [])
 
   return (
     <div>
@@ -14,8 +19,8 @@ function MainView({ onLogout }) {
         <button onClick={onLogout}>Sign out</button>
       </header>
       <main>
-        <CreateForm onCreated={() => setRefresh(r => r + 1)} />
-        <ProductTable refresh={refresh} />
+        <CreateForm onCreated={() => setRefresh(r => r + 1)} printEnabled={printEnabled} />
+        <ProductTable refresh={refresh} printEnabled={printEnabled} />
       </main>
     </div>
   )
