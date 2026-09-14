@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { apiFetch } from '../api'
+import { useT } from '../LanguageContext'
 import IconGallery from './IconGallery'
 
 export default function CreateForm({ onCreated, printEnabled = true }) {
+  const { t } = useT()
   const [name, setName] = useState('')
   const [icon, setIcon] = useState('')
   const [busy, setBusy] = useState(false)
@@ -29,7 +31,7 @@ export default function CreateForm({ onCreated, printEnabled = true }) {
       setName('')
       onCreated(product)
     } catch(err) {
-      setError(err.message || 'Failed to save')
+      setError(err.message || t('failedToSave'))
     } finally {
       setBusy(false)
     }
@@ -51,7 +53,7 @@ export default function CreateForm({ onCreated, printEnabled = true }) {
       })
       setGenResult(result)
     } catch(err) {
-      setGenError(err.message || 'Generation failed')
+      setGenError(err.message || t('generationFailed'))
     } finally {
       setGenBusy(false)
     }
@@ -65,40 +67,40 @@ export default function CreateForm({ onCreated, printEnabled = true }) {
 
   return (
     <form className="create-form" onSubmit={handleSubmit}>
-      <h2>Add product</h2>
+      <h2>{t('addProduct')}</h2>
       <input
         value={name} onChange={e => setName(e.target.value)}
-        placeholder="Product name" required
+        placeholder={t('productName')} required
       />
       <IconGallery value={icon} onChange={setIcon} />
 
       <div className="gen-section">
         <button type="button" className="gen-toggle" onClick={toggleGen}>
-          {showGen ? '▲ Hide generator' : '✦ Generate icon'}
+          {showGen ? t('hideGenerator') : t('generateIcon')}
         </button>
         {showGen && (
           <div className="gen-panel">
             <input
               value={genName || name}
               onChange={e => setGenName(e.target.value)}
-              placeholder="Describe the icon…"
+              placeholder={t('describeIcon')}
             />
             <button type="button" onClick={handleGenerate} disabled={genBusy}>
-              {genBusy ? 'Generating…' : 'Generate'}
+              {genBusy ? t('generating') : t('generate')}
             </button>
             {genError && <p className="error">{genError}</p>}
             {genResult && (
               <div className="gen-preview">
-                {genResult.exists && <p className="hint">Existing icon found</p>}
+                {genResult.exists && <p className="hint">{t('existingIconFound')}</p>}
                 <img
                   src={`data:image/png;base64,${genResult.image_b64}`}
                   alt="generated icon"
                   width={80} height={80}
                 />
                 <div className="gen-actions">
-                  <button type="button" onClick={handleUseGenerated}>Use this</button>
+                  <button type="button" onClick={handleUseGenerated}>{t('useThis')}</button>
                   <button type="button" onClick={handleGenerate} disabled={genBusy}>
-                    Try again
+                    {t('tryAgain')}
                   </button>
                 </div>
               </div>
@@ -107,11 +109,11 @@ export default function CreateForm({ onCreated, printEnabled = true }) {
         )}
       </div>
 
-      {warn && printEnabled && <p className="warn">Saved, but printing failed — use Reprint.</p>}
-      {saved && <p>Saved!</p>}
+      {warn && printEnabled && <p className="warn">{t('savedPrintFailed')}</p>}
+      {saved && <p>{t('saved')}</p>}
       {error && <p className="error">{error}</p>}
       <button type="submit" disabled={busy || !icon}>
-        {busy ? 'Saving…' : printEnabled ? 'Add & Print' : 'Add'}
+        {busy ? t('saving') : printEnabled ? t('addAndPrint') : t('add')}
       </button>
     </form>
   )

@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react'
 import { hasCredentials, clearCredentials } from './api'
+import { useT } from './LanguageContext'
 import LoginForm from './components/LoginForm'
 import CreateForm from './components/CreateForm'
 import ProductTable from './components/ProductTable'
+import LangSwitcher from './components/LangSwitcher'
 
 function MainView({ onLogout }) {
+  const { t } = useT()
   const [refresh, setRefresh] = useState(0)
   const [printEnabled, setPrintEnabled] = useState(true)
 
@@ -15,8 +18,11 @@ function MainView({ onLogout }) {
   return (
     <div>
       <header>
-        <h1>Label System</h1>
-        <button onClick={onLogout}>Sign out</button>
+        <h1>{t('title')}</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <LangSwitcher />
+          <button onClick={onLogout}>{t('signOut')}</button>
+        </div>
       </header>
       <main>
         <CreateForm onCreated={() => setRefresh(r => r + 1)} printEnabled={printEnabled} />
