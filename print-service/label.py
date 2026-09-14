@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import os
+from dataclasses import dataclass, field
 from io import BytesIO
 
 from PIL import Image, ImageDraw, ImageFont
 
 LABEL_WIDTH = 384
 LABEL_HEIGHT = 200
-ICON_SIZE = 80
-PAD = 8
 
 _FONT_CANDIDATES = [
     os.environ.get("LABEL_FONT_PATH", ""),
@@ -26,37 +25,47 @@ def _font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
     return ImageFont.load_default(size=size)  # ASCII fallback
 
 
+@dataclass
+class LabelLayout:
+    icon_x: int = 8
+    icon_y: int = 8
+    icon_size: int = 80
+    name_x: int = 96
+    name_y: int = 8
+    name_font_size: int = 24
+    number_x: int = 192
+    number_y: int = 90
+    number_font_size: int = 48
+    date_x: int = 8
+    date_y: int = 170
+    date_font_size: int = 18
+
+
 def render_label(
     inventory_number: str,
     name: str,
     created_at: str,
     icon_bytes: bytes | None,
+    layout: LabelLayout | None = None,
 ) -> bytes:
+    if layout is None:
+        layout = LabelLayout()
+
     img = Image.new("RGB", (LABEL_WIDTH, LABEL_HEIGHT), "white")
     draw = ImageDraw.Draw(img)
 
-    # Icon — top-left
     if icon_bytes:
         icon = Image.open(BytesIO(icon_bytes)).convert("RGBA")
-        icon.thumbnail((ICON_SIZE, ICON_SIZE))
+        icon.thumbnail((layout.icon_size, layout.icon_size))
         bg = Image.new("RGB", icon.size, "white")
         bg.paste(icon, mask=icon.split()[3])
-        img.paste(bg, (PAD, PAD))
+        img.paste(bg, (layout.icon_x, layout.icon_y))
 
-    text_x = (ICON_SIZE + PAD * 2) if icon_bytes else PAD
+    draw.text((layout.name_x, layout.name_y), name[:30], fill="black", font=_font(layout.name_font_size))
 
-    # Product name — top-right of icon
-    draw.text((text_x, PAD), name[:30], fill="black", font=_font(24))
+    draw.text((layout.number_x, layout.number_y), f"#{inventory_number}", fill="black", font=_font(layout.number_font_size))
 
-    # Inventory number — large, horizontally centred
-    font_inv = _font(48)
-    inv_text = f"#{inventory_number}"
-    bbox = draw.textbbox((0, 0), inv_text, font=font_inv)
-    x = (LABEL_WIDTH - (bbox[2] - bbox[0])) // 2
-    draw.text((x, 90), inv_text, fill="black", font=font_inv)
-
-    # Date — bottom-left
-    draw.text((PAD, 170), str(created_at), fill="black", font=_font(18))
+    draw.text((layout.date_x, layout.date_y), str(created_at), fill="black", font=_font(layout.date_font_size))
 
     out = BytesIO()
     img.convert("1", dither=Image.Dither.FLOYDSTEINBERG).save(out, format="PNG")

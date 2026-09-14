@@ -24,3 +24,18 @@ class ProductResponse(BaseModel):
 
 class IconInfo(BaseModel):
     filename: str
+
+
+class LabelLayout(BaseModel):
+    icon_x: int = 8
+    icon_y: int = 8
+    icon_size: int = 80
+    name_x: int = 96
+    name_y: int = 8
+    name_font_size: int = 24
+    number_x: int = 192
+    number_y: int = 90
+    number_font_size: int = 48
+    date_x: int = 8
+    date_y: int = 170
+    date_font_size: int = 18

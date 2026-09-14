@@ -6,12 +6,14 @@ import CreateForm from './components/CreateForm'
 import ImportPanel from './components/ImportPanel'
 import ProductTable from './components/ProductTable'
 import LangSwitcher from './components/LangSwitcher'
+import LabelEditor from './components/LabelEditor'
 
 function MainView({ onLogout }) {
   const { t } = useT()
   const [refresh, setRefresh] = useState(0)
   const [printEnabled, setPrintEnabled] = useState(true)
   const [showImport, setShowImport] = useState(false)
+  const [showLabelEditor, setShowLabelEditor] = useState(false)
 
   useEffect(() => {
     fetch('/api/config').then(r => r.json()).then(c => setPrintEnabled(c.print_enabled))
@@ -25,6 +27,11 @@ function MainView({ onLogout }) {
         <h1>{t('title')}</h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <LangSwitcher />
+          {printEnabled && (
+            <button className="btn-secondary" onClick={() => setShowLabelEditor(true)} title="Label settings">
+              ⚙ Label
+            </button>
+          )}
           <button className="btn-secondary" onClick={() => setShowImport(true)}>
             {t('importFromExcel')}
           </button>
@@ -40,6 +47,14 @@ function MainView({ onLogout }) {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <button className="modal-close" onClick={() => setShowImport(false)}>✕</button>
             <ImportPanel onCreated={onCreated} onClose={() => setShowImport(false)} />
+          </div>
+        </div>
+      )}
+      {showLabelEditor && (
+        <div className="modal-backdrop" onClick={() => setShowLabelEditor(false)}>
+          <div className="modal" style={{ maxWidth: 820 }} onClick={e => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setShowLabelEditor(false)}>✕</button>
+            <LabelEditor onClose={() => setShowLabelEditor(false)} />
           </div>
         </div>
       )}

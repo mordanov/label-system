@@ -1,5 +1,6 @@
 import httpx
 from ..config import settings
+from ..schemas import LabelLayout
 
 
 async def send_to_printer(
@@ -8,7 +9,10 @@ async def send_to_printer(
     created_at: str,
     icon_filename: str,
     icon_bytes: bytes,
+    layout: LabelLayout | None = None,
 ) -> bool:
+    if layout is None:
+        layout = LabelLayout()
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.post(
@@ -18,6 +22,7 @@ async def send_to_printer(
                     "name": name,
                     "created_at": created_at,
                     "icon_filename": icon_filename,
+                    **{k: str(v) for k, v in layout.model_dump().items()},
                 },
                 files={"icon_file": (icon_filename, icon_bytes, "image/png")},
             )

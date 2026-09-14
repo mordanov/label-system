@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .routers import icons
 from .config import settings
+from .routers import label_settings
 
 app = FastAPI(title="Label System", redirect_slashes=False)
 
@@ -18,6 +19,7 @@ if settings.remote_backend_url:
 else:
     from .routers import products
     app.include_router(products.router)
+    app.include_router(label_settings.router)
 
 app.include_router(icons.router)
 

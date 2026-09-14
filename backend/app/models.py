@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from sqlalchemy import String, Boolean, DateTime, Integer, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 class Base(DeclarativeBase):
@@ -24,3 +24,9 @@ class Product(Base):
     is_deleted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     deleted_by: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class UserLabelSettings(Base):
+    __tablename__ = "user_label_settings"
+    username: Mapped[str] = mapped_column(String, primary_key=True)
+    settings: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
