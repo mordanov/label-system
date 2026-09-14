@@ -4,7 +4,7 @@ import uuid
 
 class ProductCreate(BaseModel):
     name: str
-    icon_filename: str
+    icon_filename: str = ""
 
 class ProductBulkCreate(BaseModel):
     items: list[ProductCreate]

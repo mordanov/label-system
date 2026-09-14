@@ -39,11 +39,11 @@ async def create_product(
             await db.rollback()
 
     if settings.print_enabled:
-        icon_path = (ICONS_DIR / product.icon_filename).resolve()
-        if not icon_path.is_relative_to(ICONS_DIR.resolve()):
-            icon_bytes = None
-        else:
-            icon_bytes = icon_path.read_bytes() if icon_path.exists() else None
+        icon_bytes = None
+        if product.icon_filename:
+            icon_path = (ICONS_DIR / product.icon_filename).resolve()
+            if icon_path.is_relative_to(ICONS_DIR.resolve()):
+                icon_bytes = icon_path.read_bytes() if icon_path.exists() else None
         print_ok = await send_to_printer(
             inventory_number=product.inventory_number,
             name=product.name,
@@ -111,11 +111,11 @@ async def reprint_product(
         raise HTTPException(status_code=404, detail="Product not found")
 
     if settings.print_enabled:
-        icon_path = (ICONS_DIR / product.icon_filename).resolve()
-        if not icon_path.is_relative_to(ICONS_DIR.resolve()):
-            icon_bytes = None
-        else:
-            icon_bytes = icon_path.read_bytes() if icon_path.exists() else None
+        icon_bytes = None
+        if product.icon_filename:
+            icon_path = (ICONS_DIR / product.icon_filename).resolve()
+            if icon_path.is_relative_to(ICONS_DIR.resolve()):
+                icon_bytes = icon_path.read_bytes() if icon_path.exists() else None
         print_ok = await send_to_printer(
             inventory_number=product.inventory_number,
             name=product.name,

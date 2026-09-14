@@ -25,19 +25,24 @@ function MainView({ onLogout }) {
         <h1>{t('title')}</h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <LangSwitcher />
-          <button className="btn-secondary" onClick={() => setShowImport(v => !v)}>
+          <button className="btn-secondary" onClick={() => setShowImport(true)}>
             {t('importFromExcel')}
           </button>
           <button onClick={onLogout}>{t('signOut')}</button>
         </div>
       </header>
       <main>
-        {showImport
-          ? <ImportPanel onCreated={onCreated} />
-          : <CreateForm onCreated={onCreated} printEnabled={printEnabled} />
-        }
+        <CreateForm onCreated={onCreated} printEnabled={printEnabled} />
         <ProductTable refresh={refresh} printEnabled={printEnabled} />
       </main>
+      {showImport && (
+        <div className="modal-backdrop" onClick={() => setShowImport(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setShowImport(false)}>✕</button>
+            <ImportPanel onCreated={onCreated} onClose={() => setShowImport(false)} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

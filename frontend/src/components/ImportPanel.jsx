@@ -28,7 +28,7 @@ function parseXlsx(file) {
   })
 }
 
-export default function ImportPanel({ onCreated }) {
+export default function ImportPanel({ onCreated, onClose }) {
   const { t } = useT()
   const fileRef = useRef()
   const [fileName, setFileName] = useState('')
@@ -63,7 +63,7 @@ export default function ImportPanel({ onCreated }) {
   }
 
   async function handleImport() {
-    if (!icon || checked.size === 0) return
+    if (checked.size === 0) return
     setBusy(true); setResult(null); setError(null)
     try {
       const items = [...checked].map(name => ({ name, icon_filename: icon }))
@@ -82,7 +82,7 @@ export default function ImportPanel({ onCreated }) {
   }
 
   return (
-    <div className="import-panel">
+    <>
       <h2>{t('importTitle')}</h2>
 
       <div className="import-file-row">
@@ -93,13 +93,13 @@ export default function ImportPanel({ onCreated }) {
         {fileName && <span className="import-filename">{fileName}</span>}
       </div>
 
+      <div className="import-icon-section">
+        <p className="import-label">{t('importSelectIcon')}</p>
+        <IconGallery value={icon} onChange={setIcon} />
+      </div>
+
       {names.length > 0 && (
         <>
-          <div className="import-icon-section">
-            <p className="import-label">{t('importSelectIcon')}</p>
-            <IconGallery value={icon} onChange={setIcon} />
-          </div>
-
           <div className="import-toolbar">
             <button type="button" className="btn-link" onClick={() => setChecked(new Set(names))}>
               {t('importSelectAll')}
@@ -120,7 +120,8 @@ export default function ImportPanel({ onCreated }) {
 
           <button
             type="button"
-            disabled={busy || !icon || checked.size === 0}
+            className="btn-primary"
+            disabled={busy || checked.size === 0}
             onClick={handleImport}
           >
             {busy ? t('importing') : t('importProducts', { n: checked.size })}
@@ -133,6 +134,6 @@ export default function ImportPanel({ onCreated }) {
       )}
       {result !== null && <p className="import-success">{t('importDone', { n: result })}</p>}
       {error && <p className="error">{error}</p>}
-    </div>
+    </>
   )
 }
