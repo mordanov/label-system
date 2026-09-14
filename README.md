@@ -131,14 +131,15 @@ Start only backend and frontend (skip the `db` service — use the existing VPS 
 docker compose up -d --no-deps backend frontend
 ```
 
-**On local machine** — point to the VPS database by updating `.env`:
-```
-DB_HOST=<VPS_IP>
-DB_PORT=5432
-PRINT_ENABLED=true
+**On local machine** — the VPS postgres is not publicly exposed, so access it via SSH tunnel:
+
+```bash
+./scripts/start.sh --tunnel
 ```
 
-Then start as usual (`./scripts/start.sh`). The local `db` container is no longer needed — remove it from `docker compose up` or just leave it stopped.
+`--tunnel` opens `ssh -L 5433:recipes-db:5432 deploy@<VPS>` in the background and tells the local backend to connect through it. The tunnel PID is saved to `.ssh-tunnel.pid` and killed/restarted automatically on the next `start.sh --tunnel` run.
+
+Requires `~/.ssh/id_servinga` (the VPS deploy key). The local `db` container still starts but is unused — the backend routes to VPS postgres instead.
 
 With `PRINT_ENABLED=false`, the web UI shows "Add" instead of "Add & Print" and hides the Print button in the product table. All create/delete functionality remains available.
 
