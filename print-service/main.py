@@ -10,6 +10,9 @@ logger = logging.getLogger("print_service")
 
 app = FastAPI(title="Print Service")
 
+if not os.environ.get("PRINTER_BLE_ADDRESS"):
+    raise RuntimeError("PRINTER_BLE_ADDRESS env var is not set")
+
 
 @app.get("/health")
 def health():
