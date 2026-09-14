@@ -9,7 +9,7 @@ LOG_FILE="$PRINT_DIR/print-service.log"
 set -a; source "$REPO_ROOT/.env"; set +a
 
 echo "==> Starting Docker services…"
-docker-compose -f "$REPO_ROOT/docker-compose.yml" up -d
+docker-compose -f "$REPO_ROOT/docker-compose.yml" up -d --build
 
 # Ensure print-service venv + deps
 if [ ! -f "$PRINT_DIR/.venv/bin/python" ]; then
