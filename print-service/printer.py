@@ -116,9 +116,13 @@ async def print_label(ble_address: str, label_png: bytes) -> None:
             raise RuntimeError(f"Print start rejected (A9 payload={payload.hex()})")
 
         # Step 3: image data to DATA characteristic in 20-byte chunks
+        # DATA characteristic is write-without-response only (CBATTErrorDomain Code=3
+        # if response=True). Pace writes with a small sleep to avoid overflowing
+        # the printer's BLE receive buffer on macOS CoreBluetooth.
         for i in range(0, len(image_data), 20):
             await client.write_gatt_char(DATA_WRITE_UUID, image_data[i : i + 20], response=False)
+            await asyncio.sleep(0.003)
 
         # Step 4: AD finalize, wait AA print-done notification
         await client.write_gatt_char(CONTROL_WRITE_UUID, _pkt(0xAD, bytes([0x00]), use_crc=False), response=False)
-        await _wait(0xAA, max(15.0, height / 20.0))
+        await _wait(0xAA, max(30.0, height / 10.0))
