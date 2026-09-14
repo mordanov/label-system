@@ -24,6 +24,8 @@
 - [x] POST /icons/generate — AI icon generation via OpenAI (configurable model, default gpt-image-1)
 - [x] assets/icons/generated/ Docker volume — generated icons persist across rebuilds
 - [x] Frontend: Generate icon section in CreateForm (preview, use, retry)
+- [x] PRINT_ENABLED env flag — skip print on VPS, GET /config endpoint, frontend adapts buttons
+- [x] README: VPS deployment section (PRINT_ENABLED=false, docker compose --no-deps)
 
 ## Known Limitations
 

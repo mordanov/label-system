@@ -116,6 +116,32 @@ Print service:
 cd print-service && source .venv/bin/activate && python main.py
 ```
 
+## VPS Deployment
+
+Run the same codebase on a VPS (without printer). The shared PostgreSQL on the VPS is used by both the VPS instance and the local machine.
+
+**On VPS** — add to `.env`:
+```
+DB_HOST=localhost   # or postgres container name
+PRINT_ENABLED=false
+```
+
+Start only backend and frontend (skip the `db` service — use the existing VPS postgres):
+```bash
+docker compose up -d --no-deps backend frontend
+```
+
+**On local machine** — point to the VPS database by updating `.env`:
+```
+DB_HOST=<VPS_IP>
+DB_PORT=5432
+PRINT_ENABLED=true
+```
+
+Then start as usual (`./scripts/start.sh`). The local `db` container is no longer needed — remove it from `docker compose up` or just leave it stopped.
+
+With `PRINT_ENABLED=false`, the web UI shows "Add" instead of "Add & Print" and hides the Print button in the product table. All create/delete functionality remains available.
+
 ## Windows Notes
 
 **BLE constraint:** Docker Desktop on Windows runs in a WSL2 VM with no access to the host Bluetooth adapter — the same constraint as macOS. `print-service` must run natively on the host in both cases. `host.docker.internal` resolves correctly on Docker Desktop for Windows with no extra configuration.
