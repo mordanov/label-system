@@ -1,11 +1,17 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { apiFetch } from '../api'
 import { useT } from '../LanguageContext'
 import IconGallery from './IconGallery'
+import AutocompleteInput from './AutocompleteInput'
 
 export default function CreateForm({ onCreated, printEnabled = true }) {
   const { t } = useT()
   const [name, setName] = useState('')
+  const [names, setNames] = useState([])
+
+  useEffect(() => {
+    apiFetch('/products/names').then(setNames).catch(() => {})
+  }, [])
   const [icon, setIcon] = useState('')
   const [qty, setQty] = useState(1)
   const [busy, setBusy] = useState(false)
@@ -51,12 +57,12 @@ export default function CreateForm({ onCreated, printEnabled = true }) {
     setGenError(null)
   }
 
-  async function handleGenerate() {
+  async function handleGenerate(force = false) {
     setGenBusy(true); setGenError(null); setGenResult(null)
     try {
       const result = await apiFetch('/icons/generate', {
         method: 'POST',
-        body: JSON.stringify({ dish_name: genName || name }),
+        body: JSON.stringify({ dish_name: genName || name, force }),
       })
       setGenResult(result)
     } catch (err) {
@@ -79,9 +85,10 @@ export default function CreateForm({ onCreated, printEnabled = true }) {
   return (
     <form className="create-form" onSubmit={handleSubmit}>
       <h2>{t('addProduct')}</h2>
-      <input
-        value={name} onChange={e => setName(e.target.value)}
+      <AutocompleteInput
+        value={name} onChange={setName}
         placeholder={t('productName')} required
+        names={names}
       />
       <IconGallery value={icon} onChange={setIcon} />
 
@@ -125,7 +132,7 @@ export default function CreateForm({ onCreated, printEnabled = true }) {
               />
               <div className="gen-actions">
                 <button type="button" onClick={handleUseGenerated}>{t('useThis')}</button>
-                <button type="button" onClick={handleGenerate} disabled={genBusy}>
+                <button type="button" onClick={() => handleGenerate(true)} disabled={genBusy}>
                   {t('tryAgain')}
                 </button>
               </div>

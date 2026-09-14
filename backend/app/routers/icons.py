@@ -33,6 +33,7 @@ async def list_icons(current_user: str = Depends(get_current_user)):
 
 class GenerateRequest(BaseModel):
     dish_name: str
+    force: bool = False
 
 
 class GenerateResponse(BaseModel):
@@ -54,13 +55,14 @@ async def generate_icon(
     GENERATED_DIR.mkdir(exist_ok=True)
     name_slug = slug(body.dish_name)
 
-    for existing in sorted(GENERATED_DIR.glob(f"{name_slug}-*.png")):
-        img_b64 = base64.b64encode(existing.read_bytes()).decode()
-        return GenerateResponse(
-            filename=f"generated/{existing.name}",
-            exists=True,
-            image_b64=img_b64,
-        )
+    if not body.force:
+        for existing in sorted(GENERATED_DIR.glob(f"{name_slug}-*.png")):
+            img_b64 = base64.b64encode(existing.read_bytes()).decode()
+            return GenerateResponse(
+                filename=f"generated/{existing.name}",
+                exists=True,
+                image_b64=img_b64,
+            )
 
     try:
         png_bytes = generate(

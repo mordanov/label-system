@@ -15,12 +15,12 @@ const DEFAULTS = {
 
 export default function LabelEditor({ onClose }) {
   const { t } = useT()
-  const [layout, setLayout] = useState(DEFAULTS)
+  const [layout, setLayout] = useState(null)
   const [saving, setSaving] = useState(false)
   const dragging = useRef(null)
 
   useEffect(() => {
-    apiFetch('/label-settings').then(setLayout).catch(() => {})
+    apiFetch('/label-settings').then(setLayout).catch(() => setLayout(DEFAULTS))
   }, [])
 
   const startDrag = useCallback((e, xKey, yKey) => {
@@ -66,6 +66,8 @@ export default function LabelEditor({ onClose }) {
       setSaving(false)
     }
   }
+
+  if (!layout) return <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Loading…</div>
 
   return (
     <div>
