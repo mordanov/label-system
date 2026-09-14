@@ -3,6 +3,7 @@ MXW01 BLE thermal printer driver.
 Protocol adapted from: https://github.com/mordanov/MXW01_Thermal-Printer-Tool
 """
 import asyncio
+import re
 from io import BytesIO
 
 from PIL import Image
@@ -11,6 +12,12 @@ from PIL import Image
 # without the BLE stack installed (useful in CI / unit-test environments).
 # bleak backend is platform-abstracted (CoreBluetooth on macOS, WinRT on Windows) —
 # no platform-specific code needed here.
+
+_MAC_RE = re.compile(r'^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$')
+
+# Cache the resolved CoreBluetooth UUID/address so subsequent prints skip the
+# 8-10 s BLE discovery scan (connect directly by cached identifier).
+_cached_ble_address: str | None = None
 
 CONTROL_WRITE_UUID = "0000ae01-0000-1000-8000-00805f9b34fb"
 NOTIFY_UUID        = "0000ae02-0000-1000-8000-00805f9b34fb"
@@ -56,6 +63,34 @@ def _png_to_printer_rows(png_bytes: bytes) -> tuple[list[bytes], int]:
     return rows, height
 
 
+async def _resolve_device(ble_address: str, bleak_mod: object) -> object:
+    """Return a connectable address/device, using a cached UUID when available."""
+    global _cached_ble_address
+    bleak = bleak_mod
+
+    if _MAC_RE.match(ble_address):
+        # MAC address — Linux/Windows; find_device_by_address is reliable there
+        device = await bleak.BleakScanner.find_device_by_address(ble_address, timeout=10.0)
+        if device is None:
+            raise RuntimeError(f"Device '{ble_address}' not found (is it on and in range?)")
+        return device
+
+    # Name or CoreBluetooth UUID: try cached address first (no scan needed)
+    if _cached_ble_address:
+        device = await bleak.BleakScanner.find_device_by_address(_cached_ble_address, timeout=5.0)
+        if device is not None:
+            return device
+        _cached_ble_address = None  # stale — fall through to full scan
+
+    # Full discovery scan (only on first use or after cache expires)
+    found = await bleak.BleakScanner.discover(timeout=10.0)
+    device = next((d for d in found if d.address == ble_address or d.name == ble_address), None)
+    if device is None:
+        raise RuntimeError(f"Device '{ble_address}' not found during BLE scan (is it on and in range?)")
+    _cached_ble_address = device.address  # cache CoreBluetooth UUID for next time
+    return device
+
+
 async def print_label(ble_address: str, label_png: bytes) -> None:
     """Connect to MXW01, send label image, disconnect. Raises on failure."""
     import bleak  # noqa: PLC0415 — lazy so unit tests run without BLE stack
@@ -81,17 +116,7 @@ async def print_label(ble_address: str, label_png: bytes) -> None:
                 raise TimeoutError(f"Timeout waiting for notification 0x{cmd_id:02X}")
             await asyncio.sleep(0.05)
 
-    import re
-    is_mac = bool(re.match(r'^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$', ble_address))
-    if is_mac:
-        # macOS CoreBluetooth hides MAC addresses — scan all and match by name as fallback
-        device = await bleak.BleakScanner.find_device_by_address(ble_address, timeout=10.0)
-    else:
-        # Name or CoreBluetooth UUID
-        found = await bleak.BleakScanner.discover(timeout=10.0)
-        device = next((d for d in found if d.address == ble_address or d.name == ble_address), None)
-    if device is None:
-        raise RuntimeError(f"Device '{ble_address}' not found during BLE scan (is it on and in range?)")
+    device = await _resolve_device(ble_address, bleak)
 
     async with bleak.BleakClient(device) as client:
         await client.start_notify(NOTIFY_UUID, _on_notify)
@@ -121,7 +146,7 @@ async def print_label(ble_address: str, label_png: bytes) -> None:
         # the printer's BLE receive buffer on macOS CoreBluetooth.
         for i in range(0, len(image_data), 20):
             await client.write_gatt_char(DATA_WRITE_UUID, image_data[i : i + 20], response=False)
-            await asyncio.sleep(0.003)
+            await asyncio.sleep(0.001)
 
         # Step 4: AD finalize, wait AA print-done notification
         await client.write_gatt_char(CONTROL_WRITE_UUID, _pkt(0xAD, bytes([0x00]), use_crc=False), response=False)
