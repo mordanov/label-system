@@ -96,7 +96,14 @@ export default function ImportPanel({ onCreated, onClose }) {
         <button type="button" className="btn-secondary" onClick={() => fileRef.current.click()}>
           {t('importPickFile')}
         </button>
-        {fileName && <span className="import-filename">{fileName}</span>}
+        {fileName && (
+          <>
+            <span className="import-filename">{fileName}</span>
+            <button type="button" className="btn-link" onClick={() => {
+              setFileName(''); setNames([]); setChecked(new Set()); setResult(null); setError(null)
+            }}>✕</button>
+          </>
+        )}
       </div>
 
       <div className="import-icon-section">
@@ -138,7 +145,7 @@ export default function ImportPanel({ onCreated, onClose }) {
         </>
       )}
 
-      {!parsing && names.length === 0 && fileName && !error && (
+      {!parsing && names.length === 0 && fileName && !error && result === null && (
         <p className="warn">{t('importNoNames')}</p>
       )}
       {result !== null && <p className="import-success">{t('importDone', { n: result })}</p>}
