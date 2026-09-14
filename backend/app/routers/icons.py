@@ -15,7 +15,7 @@ ICONS_DIR = Path(__file__).parent.parent.parent / "assets" / "icons"
 GENERATED_DIR = ICONS_DIR / "generated"
 
 
-@router.get("/", response_model=list[IconInfo])
+@router.get("", response_model=list[IconInfo])
 async def list_icons(current_user: str = Depends(get_current_user)):
     entries = [
         IconInfo(filename=f.name)

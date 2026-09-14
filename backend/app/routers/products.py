@@ -19,7 +19,7 @@ router = APIRouter(prefix="/products", tags=["products"])
 ICONS_DIR = Path(__file__).parent.parent.parent / "assets" / "icons"
 
 
-@router.post("/", response_model=ProductResponse)
+@router.post("", response_model=ProductResponse)
 async def create_product(
     body: ProductCreate,
     db: AsyncSession = Depends(get_db),
@@ -83,7 +83,7 @@ async def create_products_bulk(
     return [ProductResponse.model_validate(p) for p in created]
 
 
-@router.get("/", response_model=list[ProductResponse])
+@router.get("", response_model=list[ProductResponse])
 async def list_products(
     q: str | None = None,
     include_deleted: bool = False,
