@@ -60,7 +60,7 @@ export const messages = {
     searchPlaceholder: 'Search by name…',
   },
   ru: {
-    title: 'Label System',
+    title: 'Система этикеток',
     signOut: 'Выйти',
     signIn: 'Войти',
     username: 'Имя пользователя',

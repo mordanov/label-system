@@ -9,7 +9,9 @@ export default function ProductTable({ refresh, printEnabled = true }) {
   const { t } = useT()
   const [products, setProducts] = useState([])
   const [q, setQ] = useState('')
-  const [showDeleted, setShowDeleted] = useState(false)
+  const [showDeleted, setShowDeleted] = useState(() => {
+    try { return localStorage.getItem('showDeleted') === 'true' } catch { return false }
+  })
   const [busy, setBusy] = useState({})
 
   async function load() {
@@ -48,7 +50,10 @@ export default function ProductTable({ refresh, printEnabled = true }) {
       <div className="table-toolbar">
         <SearchBar value={q} onChange={setQ} />
         <label className="toggle-deleted">
-          <input type="checkbox" checked={showDeleted} onChange={e => setShowDeleted(e.target.checked)} />
+          <input type="checkbox" checked={showDeleted} onChange={e => {
+              try { localStorage.setItem('showDeleted', e.target.checked) } catch {}
+              setShowDeleted(e.target.checked)
+            }} />
           {' '}{t('showDeleted')}
         </label>
       </div>
