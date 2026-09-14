@@ -52,8 +52,9 @@ export const messages = {
     statusActive: 'Active',
     statusDeletedBy: 'Deleted by {by} on {on}',
     print: 'Print',
+    reprint: 'Reprint',
     deleteBtn: 'Delete',
-    reprintFailed: 'Saved, but printing failed.',
+    reprintFailed: 'Printing failed.',
     confirmDelete: 'Delete "{name}"?',
     noProducts: 'No products',
 
@@ -112,8 +113,9 @@ export const messages = {
     statusActive: 'Активен',
     statusDeletedBy: 'Удалено {by} {on}',
     print: 'Печать',
+    reprint: 'Перепечатать',
     deleteBtn: 'Удалить',
-    reprintFailed: 'Сохранено, но печать не удалась.',
+    reprintFailed: 'Печать не удалась.',
     confirmDelete: 'Удалить «{name}»?',
     noProducts: 'Нет продуктов',
 

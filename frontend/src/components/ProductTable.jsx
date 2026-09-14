@@ -87,7 +87,7 @@ export default function ProductTable({ refresh, printEnabled = true }) {
                       {printEnabled && (
                         <>
                           <button onClick={() => reprint(p.id)} disabled={!!busy[p.id]}>
-                            {busy[p.id] === 'reprint' ? '…' : t('print')}
+                            {busy[p.id] === 'reprint' ? '…' : t('reprint')}
                           </button>
                           {' '}
                         </>
