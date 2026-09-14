@@ -2,7 +2,7 @@ import base64
 import re
 from io import BytesIO
 
-from PIL import Image
+from PIL import Image, ImageOps, ImageStat
 
 CYRILLIC = {
     'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh',
@@ -20,8 +20,13 @@ def slug(name: str) -> str:
 
 
 def _postprocess(png_bytes: bytes) -> bytes:
-    """Threshold to pure B&W and resize to 160×160 to match gallery format."""
+    """Convert to B&W icon, resize to 160×160."""
     img = Image.open(BytesIO(png_bytes)).convert('L')
+    # Stretch histogram so subject/background span the full range
+    img = ImageOps.autocontrast(img, cutoff=2)
+    # If mean brightness < 110 the background is dark — invert so subject is dark on white
+    if ImageStat.Stat(img).mean[0] < 110:
+        img = ImageOps.invert(img)
     img = img.point(lambda x: 255 if x > 128 else 0)
     img = img.convert('RGB')
     img = img.resize((160, 160), Image.LANCZOS)
@@ -35,12 +40,10 @@ def generate(dish_name: str, api_key: str, model: str) -> bytes:
 
     client = OpenAI(api_key=api_key)
     prompt = (
-        f"Food/product icon for: {dish_name}. "
-        "Style: black line-art on white background. "
-        "Single centered illustration, black outlines only, no color fill, no gradients, no halftones. "
-        "Consistent medium rounded stroke weight. Simple clean silhouette — recognizable but not photorealistic. "
-        "One central object, optionally in a simple bowl or jar if appropriate. "
-        "No text, no background patterns, no shadows."
+        f"Simple food product sticker icon: {dish_name}. "
+        "White background. Single centered food item. "
+        "Bold thick outlines, high contrast, flat clipart style. "
+        "No text, no shadows, no gradients, no background patterns."
     )
     response = client.images.generate(
         model=model,
