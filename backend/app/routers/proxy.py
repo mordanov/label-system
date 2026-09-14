@@ -35,7 +35,7 @@ async def _forward(
     credentials: HTTPBasicCredentials,
     json_body=None,
 ) -> dict:
-    url = settings.remote_backend_url.rstrip("/") + path
+    url = settings.remote_backend_url.rstrip("/") + "/api" + path
     async with httpx.AsyncClient(timeout=30.0) as client:
         resp = await client.request(
             method, url, json=json_body, headers=_auth_header(credentials)
