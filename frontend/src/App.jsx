@@ -25,11 +25,11 @@ function MainView({ onLogout }) {
     <div>
       <header>
         <h1>{t('title')}</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div className="header-actions">
           <LangSwitcher />
           {printEnabled && (
-            <button className="btn-secondary" onClick={() => setShowLabelEditor(true)} title="Label settings">
-              ⚙ Label
+            <button className="btn-secondary" onClick={() => setShowLabelEditor(true)}>
+              {t('labelSettingsBtn')}
             </button>
           )}
           <button className="btn-secondary" onClick={() => setShowImport(true)}>

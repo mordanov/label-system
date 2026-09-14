@@ -84,6 +84,16 @@ async def create_products_bulk(
     return [ProductResponse.model_validate(p) for p in created]
 
 
+@router.get("/names")
+async def product_names(
+    db: AsyncSession = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+):
+    stmt = select(Product.name).where(Product.is_deleted == False).distinct().order_by(Product.name)  # noqa: E712
+    result = await db.execute(stmt)
+    return result.scalars().all()
+
+
 @router.get("", response_model=list[ProductResponse])
 async def list_products(
     q: str | None = None,

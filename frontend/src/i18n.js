@@ -59,6 +59,21 @@ export const messages = {
     noProducts: 'No products',
 
     searchPlaceholder: 'Search by name…',
+
+    labelSettingsBtn: '⚙ Label',
+    labelSettingsTitle: 'Label Layout',
+    labelSettingsHint: 'Drag elements to reposition. Use sliders to adjust sizes.',
+    labelReset: 'Reset',
+    labelSave: 'Save',
+    labelSaving: 'Saving…',
+    labelIconSize: 'Icon size',
+    labelNameFont: 'Name font',
+    labelNumberFont: 'Number font',
+    labelDateFont: 'Date font',
+
+    pageSize: 'Per page:',
+    pagePrev: '‹',
+    pageNext: '›',
   },
   ru: {
     title: 'Система этикеток',
@@ -120,5 +135,20 @@ export const messages = {
     noProducts: 'Нет продуктов',
 
     searchPlaceholder: 'Поиск по названию…',
+
+    labelSettingsBtn: '⚙ Этикетка',
+    labelSettingsTitle: 'Настройки этикетки',
+    labelSettingsHint: 'Перетащите элементы, чтобы изменить позицию. Слайдеры — для размеров.',
+    labelReset: 'Сбросить',
+    labelSave: 'Сохранить',
+    labelSaving: 'Сохранение…',
+    labelIconSize: 'Размер иконки',
+    labelNameFont: 'Шрифт названия',
+    labelNumberFont: 'Шрифт номера',
+    labelDateFont: 'Шрифт даты',
+
+    pageSize: 'На странице:',
+    pagePrev: '‹',
+    pageNext: '›',
   },
 }

@@ -4,13 +4,28 @@ Home inventory tracker with label printing on MXW01 BLE thermal printer.
 
 ## Architecture
 
-- **db, backend, frontend** — Docker Compose
-- **print-service** — native host process (BLE requires host Bluetooth; Docker Desktop has no BLE access on either macOS or Windows)
+- **db, backend, frontend** — Docker Compose (deployed on VPS via GitHub Actions)
+- **print-service** — native host process (BLE requires host Bluetooth; Docker Desktop has no BLE access on macOS or Windows)
+
+The production setup uses a shared PostgreSQL on the VPS. The local machine proxies DB operations through the VPS backend and sends print jobs to the local BLE printer.
+
+## Features
+
+- Create and print product labels with inventory numbers
+- Bulk import from Excel
+- Search with autocomplete from existing product names
+- Reprint labels for existing products
+- AI icon generation (OpenAI `gpt-image-1`)
+- WYSIWYG label layout editor (positions, font sizes, icon size) — saved per user on server
+- Paginated product table (50/100/200 per page)
+- Russian/English UI
+- PWA — installable as an app on iOS and Android
+- BLE printer: macOS CoreBluetooth UUID caching (fast repeat prints ~1s after first ~10s scan)
 
 ## Prerequisites
 
 - Docker Desktop
-- Python 3
+- Python 3.x (for print-service venv)
 - Bluetooth-capable machine (Mac or Windows)
 - MXW01 BLE thermal printer
 
@@ -20,14 +35,25 @@ Home inventory tracker with label printing on MXW01 BLE thermal printer.
 
 ```bash
 cp .env.example .env
-# Edit .env: set DB_PASSWORD, APP_PASS_1, APP_PASS_2, PRINTER_BLE_ADDRESS
 ```
 
-Find your printer's BLE address:
+Edit `.env`:
+| Variable | Description |
+|---|---|
+| `DB_PASSWORD` | PostgreSQL password |
+| `APP_PASS_1`, `APP_PASS_2` | Login passwords for user1/user2 |
+| `PRINTER_BLE_ADDRESS` | Printer name (e.g. `MXW01`) or BLE address |
+| `REMOTE_BACKEND_URL` | VPS backend URL (if using remote DB) |
+| `PRINT_ENABLED` | `true` on printer machine, `false` on VPS |
+| `OPENAI_API_KEY` | For AI icon generation (optional) |
+
+Find your printer's BLE name/address:
 ```bash
 cd print-service
-python3 -c "import asyncio; from bleak import BleakScanner; asyncio.run(BleakScanner.discover())"
+python3 -c "import asyncio; from bleak import BleakScanner; asyncio.run(BleakScanner.discover(timeout=5))" 2>&1 | grep -v Traceback
 ```
+
+On macOS, CoreBluetooth hides hardware MAC addresses. Use the device name (e.g. `MXW01`) — the service caches the CoreBluetooth UUID after the first scan for fast subsequent prints.
 
 ### 2. Start everything
 
@@ -38,52 +64,92 @@ python3 -c "import asyncio; from bleak import BleakScanner; asyncio.run(BleakSca
 
 **Windows (PowerShell):**
 ```powershell
-# Allow local scripts once (per user, one-time):
-Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
-
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser  # one-time
 ./scripts/start.ps1
 ```
 
-Both scripts:
-- Start db, backend, frontend via Docker Compose
-- Create print-service venv (first run only) and install deps
-- Start print-service natively on the host
+Both scripts start db/backend/frontend via Docker Compose (with `--build`) and start print-service natively on the host.
 
 Frontend: http://localhost:3000
 
-### 3. Stop everything
+### 3. Restart print-service only
+
+```bash
+./scripts/restart-print-service.sh
+```
+
+Useful after the BLE printer times out (idle disconnection). The service caches the CoreBluetooth UUID in memory; restarting clears the cache and forces a fresh BLE scan on the next print.
+
+### 4. Stop everything
 
 **macOS / Linux:**
 ```bash
 ./scripts/stop.sh
 ```
 
-**Windows (PowerShell):**
+**Windows:**
 ```powershell
 ./scripts/stop.ps1
 ```
 
 ## Service URLs
 
-| Service       | URL                            |
-|---------------|--------------------------------|
-| Frontend      | http://localhost:3000          |
-| Backend API   | http://localhost:8000/docs     |
-| Print service | http://localhost:9100          |
+| Service | URL |
+|---|---|
+| Frontend | http://localhost:3000 |
+| Backend API (Swagger) | http://localhost:8000/docs |
+| Print service | http://localhost:9100 |
+
+## Label Layout Editor
+
+Click **⚙ Этикетка / ⚙ Label** in the top bar to open the WYSIWYG editor:
+
+- **Drag** the icon, product name, inventory number, and date to any position on the 2× preview
+- **Sliders** adjust font sizes and icon size
+- Settings are saved per-user on the server and applied to all subsequent prints
+
+The label is 384×200 pixels (printed at ~96 DPI on the MXW01).
+
+## Adding Custom Icons
+
+Drop black-and-white PNG files (any size, scaled to 160×160) into `assets/icons/`, then rebuild:
+```bash
+docker compose build backend && docker compose up -d backend
+```
+
+Or use the AI generator: expand **✦ Generate icon** in the create form and describe the icon in Russian or English.
+
+## VPS Deployment
+
+Deployed automatically via GitHub Actions on push to `main`. The workflow:
+1. Builds `backend` and `frontend` Docker images and pushes to GitHub Container Registry (ghcr.io)
+2. SSHes into the VPS, pulls the new images, restarts the containers
+3. On startup, the backend container runs `alembic upgrade head` automatically
+
+**On VPS** (`.env`):
+```
+DB_HOST=<postgres-container-name>
+PRINT_ENABLED=false
+```
+
+**On local machine with printer** (`.env`):
+```
+REMOTE_BACKEND_URL=https://<your-vps-domain>
+PRINT_ENABLED=true
+PRINTER_BLE_ADDRESS=MXW01
+```
 
 ## Running Tests
 
-Backend:
 ```bash
+# Backend
 cd backend && python -m pytest tests/ -v
-```
 
-Print service:
-```bash
+# Print service
 cd print-service && .venv/bin/python -m pytest tests/ -v
 ```
 
-## Running migrations manually
+## Running Migrations Manually
 
 ```bash
 cd backend
@@ -91,66 +157,25 @@ export $(grep -v '^#' ../.env | xargs) && export DB_HOST=localhost
 python -m alembic upgrade head
 ```
 
-## Adding icons
-
-Drop black-and-white PNG files (any size, will be scaled to 80×80) into `assets/icons/`, then rebuild the backend image:
-```bash
-docker compose build backend && docker compose up -d backend
-```
-
 ## Development
 
-Backend dev server (outside Docker, needs DB running):
 ```bash
+# Backend with hot reload (needs DB running)
 docker compose up db -d
 cd backend && uvicorn app.main:app --reload
-```
 
-Frontend dev server:
-```bash
-cd frontend && npm run dev  # proxies /api → localhost:8000
-```
+# Frontend dev server (proxies /api → localhost:8000)
+cd frontend && npm run dev
 
-Print service:
-```bash
+# Print service
 cd print-service && source .venv/bin/activate && python main.py
 ```
 
-## VPS Deployment
-
-Run the same codebase on a VPS (without printer). The shared PostgreSQL on the VPS is used by both the VPS instance and the local machine.
-
-**On VPS** — add to `.env`:
-```
-DB_HOST=recipes-db   # postgres container name in the VPS Docker network
-PRINT_ENABLED=false
-```
-
-Start only backend and frontend (skip the `db` service — use the existing VPS postgres):
-```bash
-docker-compose up -d --no-deps backend frontend
-```
-
-**On local machine with printer** — the VPS postgres is not publicly exposed, so the local backend proxies all DB operations through the VPS backend over HTTPS. Add to `.env`:
-```
-REMOTE_BACKEND_URL=https://<your-vps-domain>
-PRINT_ENABLED=true
-```
-
-Then start as usual:
-```bash
-./scripts/start.sh
-```
-
-How it works: when `REMOTE_BACKEND_URL` is set, the local backend forwards all product API calls to the VPS backend (which has the DB connection). For create and reprint operations, the local backend additionally triggers the local BLE printer. The local `db` container still starts but is unused.
-
-With `PRINT_ENABLED=false`, the web UI shows "Add" instead of "Add & Print" and hides the Print button in the product table. All create/delete functionality remains available.
-
 ## Windows Notes
 
-**BLE constraint:** Docker Desktop on Windows runs in a WSL2 VM with no access to the host Bluetooth adapter — the same constraint as macOS. `print-service` must run natively on the host in both cases. `host.docker.internal` resolves correctly on Docker Desktop for Windows with no extra configuration.
+**BLE:** Docker Desktop on Windows uses WSL2 (no Bluetooth access). `print-service` always runs natively on the host. `host.docker.internal` resolves correctly in Docker Desktop for Windows.
 
-**Autostart with Task Scheduler:**
+**Autostart:**
 ```powershell
 $action  = New-ScheduledTaskAction -Execute 'powershell.exe' `
                -Argument "-NonInteractive -File C:\path\to\label-system\scripts\start.ps1"
@@ -158,8 +183,8 @@ $trigger = New-ScheduledTaskTrigger -AtLogOn
 Register-ScheduledTask -TaskName 'LabelSystem' -Action $action -Trigger $trigger -RunLevel Highest
 ```
 
-**Find your printer's BLE address (Windows):**
+**Find BLE device:**
 ```powershell
 cd print-service
-.\.venv\Scripts\python.exe -c "import asyncio; from bleak import BleakScanner; asyncio.run(BleakScanner.discover())"
+.\.venv\Scripts\python.exe -c "import asyncio; from bleak import BleakScanner; asyncio.run(BleakScanner.discover(timeout=5))"
 ```

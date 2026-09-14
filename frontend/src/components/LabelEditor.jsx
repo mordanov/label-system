@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { apiFetch } from '../api'
+import { useT } from '../LanguageContext'
 
 const SCALE = 2
 const LABEL_W = 384
@@ -13,6 +14,7 @@ const DEFAULTS = {
 }
 
 export default function LabelEditor({ onClose }) {
+  const { t } = useT()
   const [layout, setLayout] = useState(DEFAULTS)
   const [saving, setSaving] = useState(false)
   const dragging = useRef(null)
@@ -67,12 +69,13 @@ export default function LabelEditor({ onClose }) {
 
   return (
     <div>
-      <h2 style={{ marginBottom: 12 }}>Label Layout</h2>
+      <h2 style={{ marginBottom: 12 }}>{t('labelSettingsTitle')}</h2>
       <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 12 }}>
-        Drag elements to reposition. Use sliders to adjust sizes.
+        {t('labelSettingsHint')}
       </p>
 
-      {/* Preview */}
+      {/* Preview — horizontally scrollable on small screens */}
+      <div style={{ overflowX: 'auto', marginBottom: 16, WebkitOverflowScrolling: 'touch' }}>
       <div style={{
         position: 'relative',
         width: LABEL_W * SCALE,
@@ -80,7 +83,6 @@ export default function LabelEditor({ onClose }) {
         background: 'white',
         border: '1px solid #d1d5db',
         boxShadow: '0 1px 4px #0001',
-        marginBottom: 16,
         overflow: 'hidden',
         userSelect: 'none',
         cursor: 'default',
@@ -168,19 +170,20 @@ export default function LabelEditor({ onClose }) {
           }}
         >2024-01-15</div>
       </div>
+      </div>
 
       {/* Sliders */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 24px' }}>
-        <Slider label="Icon size" value={layout.icon_size} min={32} max={160} onChange={v => set('icon_size', v)} />
-        <Slider label="Name font" value={layout.name_font_size} min={10} max={48} onChange={v => set('name_font_size', v)} />
-        <Slider label="Number font" value={layout.number_font_size} min={18} max={80} onChange={v => set('number_font_size', v)} />
-        <Slider label="Date font" value={layout.date_font_size} min={8} max={32} onChange={v => set('date_font_size', v)} />
+        <Slider label={t('labelIconSize')} value={layout.icon_size} min={32} max={160} onChange={v => set('icon_size', v)} />
+        <Slider label={t('labelNameFont')} value={layout.name_font_size} min={10} max={48} onChange={v => set('name_font_size', v)} />
+        <Slider label={t('labelNumberFont')} value={layout.number_font_size} min={18} max={80} onChange={v => set('number_font_size', v)} />
+        <Slider label={t('labelDateFont')} value={layout.date_font_size} min={8} max={32} onChange={v => set('date_font_size', v)} />
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
-        <button className="btn-secondary" onClick={() => setLayout(DEFAULTS)}>Reset</button>
+        <button className="btn-secondary" onClick={() => setLayout(DEFAULTS)}>{t('labelReset')}</button>
         <button className="btn-primary" onClick={save} disabled={saving}>
-          {saving ? 'Saving…' : 'Save'}
+          {saving ? t('labelSaving') : t('labelSave')}
         </button>
       </div>
     </div>

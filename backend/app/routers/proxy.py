@@ -85,6 +85,14 @@ async def create_product(
     return product
 
 
+@router.get("/products/names")
+async def proxy_product_names(
+    credentials: HTTPBasicCredentials = Depends(security),
+    _: str = Depends(get_current_user),
+):
+    return await _forward("GET", "/products/names", credentials)
+
+
 @router.post("/products/bulk")
 async def create_products_bulk(
     body: dict,

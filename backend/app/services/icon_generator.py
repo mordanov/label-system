@@ -47,7 +47,6 @@ def generate(dish_name: str, api_key: str, model: str) -> bytes:
         prompt=prompt,
         n=1,
         size="1024x1024",
-        response_format="b64_json",
     )
     raw = base64.b64decode(response.data[0].b64_json)
     return _postprocess(raw)
