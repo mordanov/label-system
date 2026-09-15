@@ -5,15 +5,23 @@ import uuid
 class ProductCreate(BaseModel):
     name: str
     icon_filename: str = ""
+    units: int | None = None
 
 class ProductBulkCreate(BaseModel):
     items: list[ProductCreate]
+
+class ProductSetIcon(BaseModel):
+    icon_filename: str
+
+class ProductSetUnits(BaseModel):
+    units: int | None
 
 class ProductResponse(BaseModel):
     id: uuid.UUID
     inventory_number: str
     name: str
     icon_filename: str
+    units: int | None
     created_at: datetime
     is_deleted: bool
     deleted_at: datetime | None

@@ -203,3 +203,23 @@ td button:disabled { opacity: 0.5; cursor: default; }
 .import-success { color: #16a34a; font-size: 0.875rem; margin-top: 0.5rem; }
 .import-hint { font-size: 0.8rem; color: #6b7280; margin-bottom: 0.4rem; }
 .import-dup { color: #d97706; }
+
+.units-row { display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0 0.25rem; }
+.units-label { font-size: 0.875rem; color: #374151; white-space: nowrap; }
+.units-input { width: 5rem; padding: 0.4rem 0.5rem; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; text-align: center; }
+
+.icon-edit-btn {
+  background: none; border: none; cursor: pointer; padding: 2px; border-radius: 4px;
+  display: inline-flex; opacity: 0.85;
+}
+.icon-edit-btn:hover { opacity: 1; outline: 2px solid #2563eb; }
+
+.units-cell { display: flex; align-items: center; gap: 0.3rem; min-width: 4rem; }
+.units-edit-input {
+  width: 4rem; padding: 0.2rem 0.35rem; border: 1px solid #2563eb;
+  border-radius: 3px; font-size: 0.8rem; text-align: center;
+}
+.units-edit-btn { font-size: 0.75rem; padding: 0.15rem 0.3rem; line-height: 1; }
+.units-clickable { cursor: pointer; color: #374151; }
+.units-clickable:hover { color: #2563eb; text-decoration: underline; }
+@media (max-width: 600px) { .col-units { display: none; } }

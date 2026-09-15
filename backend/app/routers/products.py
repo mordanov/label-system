@@ -8,7 +8,7 @@ import uuid
 
 from ..database import get_db
 from ..models import Product
-from ..schemas import ProductCreate, ProductBulkCreate, ProductResponse
+from ..schemas import ProductCreate, ProductBulkCreate, ProductResponse, ProductSetIcon, ProductSetUnits
 from ..auth import get_current_user
 from ..services.inventory import next_inventory_number
 from ..services.print_client import send_to_printer
@@ -29,7 +29,7 @@ async def create_product(
         try:
             async with db.begin():
                 inv = await next_inventory_number(db)
-                product = Product(name=body.name, icon_filename=body.icon_filename, inventory_number=inv)
+                product = Product(name=body.name, icon_filename=body.icon_filename, units=body.units, inventory_number=inv)
                 db.add(product)
             await db.refresh(product)
             break
@@ -71,7 +71,7 @@ async def create_products_bulk(
             try:
                 async with db.begin():
                     inv = await next_inventory_number(db)
-                    product = Product(name=item.name, icon_filename=item.icon_filename, inventory_number=inv)
+                    product = Product(name=item.name, icon_filename=item.icon_filename, units=item.units, inventory_number=inv)
                     db.add(product)
                     await db.flush()
                     await db.refresh(product)
@@ -140,6 +140,38 @@ async def reprint_product(
     resp = ProductResponse.model_validate(product)
     resp.print_warning = not print_ok
     return resp
+
+
+@router.post("/{product_id}/icon", response_model=ProductResponse)
+async def set_product_icon(
+    product_id: uuid.UUID,
+    body: ProductSetIcon,
+    db: AsyncSession = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+):
+    async with db.begin():
+        product = await db.get(Product, product_id)
+        if not product or product.is_deleted:
+            raise HTTPException(status_code=404, detail="Product not found")
+        product.icon_filename = body.icon_filename
+    await db.refresh(product)
+    return ProductResponse.model_validate(product)
+
+
+@router.post("/{product_id}/units", response_model=ProductResponse)
+async def set_product_units(
+    product_id: uuid.UUID,
+    body: ProductSetUnits,
+    db: AsyncSession = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+):
+    async with db.begin():
+        product = await db.get(Product, product_id)
+        if not product or product.is_deleted:
+            raise HTTPException(status_code=404, detail="Product not found")
+        product.units = body.units
+    await db.refresh(product)
+    return ProductResponse.model_validate(product)
 
 
 @router.post("/{product_id}/delete", response_model=ProductResponse)

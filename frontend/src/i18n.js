@@ -42,6 +42,11 @@ export const messages = {
     importDups: '{n} duplicates removed',
     parsing: 'Parsing',
 
+    unitsPerProduct: 'Units per product',
+    unitsPlaceholder: 'e.g. 22',
+    colUnits: 'Units',
+    changeIcon: 'Change icon',
+
     showDeleted: 'Show deleted',
     colNum: '#',
     colIcon: 'Icon',
@@ -117,6 +122,11 @@ export const messages = {
     importFound: 'Найдено {n} названий',
     importDups: '{n} дублей удалено',
     parsing: 'Читаю файл',
+
+    unitsPerProduct: 'Единиц в упаковке',
+    unitsPlaceholder: 'напр. 22',
+    colUnits: 'Кол-во',
+    changeIcon: 'Изменить иконку',
 
     showDeleted: 'Показать удалённые',
     colNum: '№',
