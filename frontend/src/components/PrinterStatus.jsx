@@ -17,14 +17,23 @@ export default function PrinterStatus() {
 
   if (!status) return null
 
-  const title = status.connected
-    ? `Printer ready${status.battery_pct != null ? ` · Battery: ${status.battery_pct}%` : ''}${status.a1_payload_hex ? ` · A1: ${status.a1_payload_hex}` : ''}`
-    : (status.error || 'Printer offline')
+  const bat = status.battery_pct ?? null
+  const temp = status.head_temp_c ?? null
+  const fw = status.firmware ?? null
+  const titleParts = []
+  if (status.connected) {
+    titleParts.push('Printer ready')
+    if (bat != null) titleParts.push(`Battery: ${bat}%`)
+    if (temp != null) titleParts.push(`Head: ${temp}°C`)
+    if (fw) titleParts.push(`FW: ${fw}`)
+  } else {
+    titleParts.push(status.error || 'Printer offline')
+  }
 
   return (
-    <span className={`printer-status ${status.connected ? 'printer-online' : 'printer-offline'}`} title={title}>
+    <span className={`printer-status ${status.connected ? 'printer-online' : 'printer-offline'}`} title={titleParts.join(' · ')}>
       <span className="status-dot" />
-      {status.battery_pct != null && `${status.battery_pct}%`}
+      {bat != null && `${bat}%`}
     </span>
   )
 }

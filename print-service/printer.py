@@ -211,7 +211,14 @@ async def printer_status(ble_address: str) -> dict:
         result["a1_payload_hex"] = payload.hex()
         result["a1_bytes"] = list(payload)
         result["ready"] = len(payload) > 6 and payload[6] == 0
+        # ponytail: byte positions inferred from one sample — verify by draining battery / printing repeatedly
+        if len(payload) >= 5:
+            result["battery_pct"] = payload[3]
+            result["head_temp_c"] = payload[4]
+        if len(payload) >= 10:
+            result["firmware"] = f"{payload[8]}.{payload[9]}"
 
-    logger.info("Printer status: battery=%s%% ready=%s a1=%s",
-                result.get("battery_pct"), result.get("ready"), result.get("a1_payload_hex"))
+    logger.info("Printer status: battery=%s%% temp=%s°C ready=%s fw=%s",
+                result.get("battery_pct"), result.get("head_temp_c"),
+                result.get("ready"), result.get("firmware"))
     return result
