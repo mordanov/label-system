@@ -21,6 +21,27 @@ if ! "$PRINT_DIR/.venv/bin/pip" show fastapi &>/dev/null; then
   "$PRINT_DIR/.venv/bin/pip" install -q --index-url https://pypi.org/simple/ -r "$PRINT_DIR/requirements.txt"
 fi
 
+# Configure printer BLE address if still set to the placeholder
+if [ "${PRINTER_BLE_ADDRESS:-}" = "" ] || [ "${PRINTER_BLE_ADDRESS:-}" = "XX:XX:XX:XX:XX:XX" ]; then
+  echo "==> PRINTER_BLE_ADDRESS not configured. Scanning for BLE devices…"
+  _SCAN=$("$PRINT_DIR/.venv/bin/python" "$PRINT_DIR/ble_scan.py" 2>/dev/tty) || true
+  if [ -z "$_SCAN" ]; then
+    echo "==> No BLE devices found. Turn on the printer and re-run, or set PRINTER_BLE_ADDRESS in .env manually."
+  else
+    echo "$_SCAN" | awk -F'\t' '{printf "  %s. %s (%s)\n", $1, $2, $3}'
+    printf "==> Enter device number: " > /dev/tty
+    read -r _NUM < /dev/tty
+    _NAME=$(echo "$_SCAN" | awk -F'\t' -v n="$_NUM" 'NR==n {print $2}')
+    if [ -n "$_NAME" ]; then
+      sed -i '' "s|^PRINTER_BLE_ADDRESS=.*|PRINTER_BLE_ADDRESS=$_NAME|" "$REPO_ROOT/.env"
+      export PRINTER_BLE_ADDRESS="$_NAME"
+      echo "==> Printer set to: $PRINTER_BLE_ADDRESS"
+    else
+      echo "==> Invalid selection. Set PRINTER_BLE_ADDRESS in .env manually."
+    fi
+  fi
+fi
+
 # Always restart print-service
 if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
   echo "==> Restarting print-service (PID $(cat "$PID_FILE"))…"

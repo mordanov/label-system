@@ -32,6 +32,31 @@ if ($LASTEXITCODE -ne 0) {
     & $VenvPip install -q -r (Join-Path $PrintDir 'requirements.txt')
 }
 
+# Configure printer BLE address if still set to the placeholder
+if ([string]::IsNullOrEmpty($env:PRINTER_BLE_ADDRESS) -or $env:PRINTER_BLE_ADDRESS -eq 'XX:XX:XX:XX:XX:XX') {
+    Write-Host '==> PRINTER_BLE_ADDRESS not configured. Scanning for BLE devices...'
+    $scanLines = @(& $VenvPy (Join-Path $PrintDir 'ble_scan.py') 2>$null)
+    if (-not $scanLines) {
+        Write-Host '==> No BLE devices found. Turn on the printer and re-run, or set PRINTER_BLE_ADDRESS in .env manually.'
+    } else {
+        foreach ($line in $scanLines) {
+            $p = $line -split "`t"
+            Write-Host "  $($p[0]). $($p[1]) ($($p[2]))"
+        }
+        $choice = Read-Host '==> Enter device number'
+        $chosen = $scanLines | Where-Object { ($_ -split "`t")[0] -eq $choice } | Select-Object -First 1
+        if ($chosen) {
+            $mac = ($chosen -split "`t")[2]
+            (Get-Content $EnvFile) -replace '^PRINTER_BLE_ADDRESS=.*', "PRINTER_BLE_ADDRESS=$mac" |
+                Set-Content $EnvFile
+            [System.Environment]::SetEnvironmentVariable('PRINTER_BLE_ADDRESS', $mac, 'Process')
+            Write-Host "==> Printer set to: $mac"
+        } else {
+            Write-Host '==> Invalid selection. Set PRINTER_BLE_ADDRESS in .env manually.'
+        }
+    }
+}
+
 # Start print-service if not already running
 $alreadyRunning = $false
 if (Test-Path $PidFile) {
