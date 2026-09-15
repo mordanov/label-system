@@ -19,6 +19,6 @@ else
 fi
 
 echo "==> Stopping Docker services…"
-docker compose -f "$REPO_ROOT/docker-compose.yml" down
+docker-compose -f "$REPO_ROOT/docker-compose.yml" down
 
 echo "==> Done."
