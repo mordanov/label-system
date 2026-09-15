@@ -7,6 +7,7 @@ import ImportPanel from './components/ImportPanel'
 import ProductTable from './components/ProductTable'
 import LangSwitcher from './components/LangSwitcher'
 import LabelEditor from './components/LabelEditor'
+import PrinterStatus from './components/PrinterStatus'
 
 function MainView({ onLogout }) {
   const { t } = useT()
@@ -27,6 +28,7 @@ function MainView({ onLogout }) {
         <h1>{t('title')}</h1>
         <div className="header-actions">
           <LangSwitcher />
+          {printEnabled && <PrinterStatus />}
           {printEnabled && (
             <button className="btn-secondary" onClick={() => setShowLabelEditor(true)}>
               {t('labelSettingsBtn')}

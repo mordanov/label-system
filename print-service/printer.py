@@ -26,6 +26,7 @@ _cached_ble_address: str | None = None
 CONTROL_WRITE_UUID = "0000ae01-0000-1000-8000-00805f9b34fb"
 NOTIFY_UUID        = "0000ae02-0000-1000-8000-00805f9b34fb"
 DATA_WRITE_UUID    = "0000ae03-0000-1000-8000-00805f9b34fb"
+BATTERY_UUID       = "00002a19-0000-1000-8000-00805f9b34fb"  # standard BLE Battery Service
 
 
 def _crc8(data: bytes) -> int:
@@ -96,8 +97,8 @@ async def _resolve_device(ble_address: str, bleak_mod: object) -> object:
     if device is None:
         raise RuntimeError(f"Device '{ble_address}' not found during BLE scan (is it on and in range?)")
     _cached_ble_address = device.address
-    logger.info("BLE device found via scan in %.1fs: %s rssi=%s (addr=%s cached)",
-                time.monotonic() - t, device.name, device.rssi, device.address)
+    logger.info("BLE device found via scan in %.1fs: %s (addr=%s cached)",
+                time.monotonic() - t, device.name, device.address)
     return device
 
 
@@ -166,3 +167,51 @@ async def print_label(ble_address: str, label_png: bytes) -> None:
         await client.write_gatt_char(CONTROL_WRITE_UUID, _pkt(0xAD, bytes([0x00]), use_crc=False), response=False)
         await _wait(0xAA, max(30.0, height / 10.0))
         logger.info("Printed in %.1fs", time.monotonic() - t)
+
+
+async def printer_status(ble_address: str) -> dict:
+    """Connect to printer, read battery level and A1 status payload. Does not print."""
+    import bleak
+
+    received: dict[int, bytes] = {}
+
+    def _on_notify(_char: object, data: bytearray) -> None:
+        cmd_id, payload = _parse_notification(data)
+        if cmd_id is not None:
+            received[cmd_id] = payload
+
+    async def _wait(cmd_id: int, timeout: float) -> bytes:
+        deadline = asyncio.get_running_loop().time() + timeout
+        while True:
+            if cmd_id in received:
+                return received.pop(cmd_id)
+            if asyncio.get_running_loop().time() >= deadline:
+                raise TimeoutError(f"Timeout waiting for 0x{cmd_id:02X}")
+            await asyncio.sleep(0.05)
+
+    result: dict = {"connected": False}
+    device = await _resolve_device(ble_address, bleak)
+
+    async with bleak.BleakClient(device) as client:
+        result["connected"] = True
+
+        # Standard BLE Battery Service — 0x2A19, returns single byte 0-100
+        try:
+            bat = await client.read_gatt_char(BATTERY_UUID)
+            result["battery_pct"] = bat[0]
+        except Exception:
+            result["battery_pct"] = None
+
+        # A1 handshake → full status payload (all bytes, not just readiness flag)
+        await client.start_notify(NOTIFY_UUID, _on_notify)
+        for cmd_id, data in [(0xB1, b""), (0xA2, bytes([0x5D])), (0xA1, bytes([0x00]))]:
+            await client.write_gatt_char(CONTROL_WRITE_UUID, _pkt(cmd_id, data, use_crc=True), response=False)
+            await asyncio.sleep(0.01)
+        payload = await _wait(0xA1, 7.0)
+        result["a1_payload_hex"] = payload.hex()
+        result["a1_bytes"] = list(payload)
+        result["ready"] = len(payload) > 6 and payload[6] == 0
+
+    logger.info("Printer status: battery=%s%% ready=%s a1=%s",
+                result.get("battery_pct"), result.get("ready"), result.get("a1_payload_hex"))
+    return result

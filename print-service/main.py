@@ -4,7 +4,7 @@ import os
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 
 from label import LabelLayout, render_label
-from printer import print_label
+from printer import print_label, printer_status
 
 logger = logging.getLogger("print_service")
 
@@ -17,6 +17,16 @@ if not os.environ.get("PRINTER_BLE_ADDRESS"):
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/status")
+async def status_endpoint():
+    ble_address = os.environ["PRINTER_BLE_ADDRESS"]
+    try:
+        return await printer_status(ble_address)
+    except Exception as exc:
+        logger.warning("Status check failed (%s): %s", type(exc).__name__, exc)
+        return {"connected": False, "error": str(exc)}
 
 
 @app.post("/print")

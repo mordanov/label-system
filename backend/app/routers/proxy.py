@@ -150,6 +150,18 @@ async def proxy_put_label_settings(
     return await _forward("PUT", "/label-settings", credentials, json_body=body)
 
 
+# ── printer status ───────────────────────────────────────────────────────────
+
+@router.get("/printer-status")
+async def proxy_printer_status(_: str = Depends(get_current_user)):
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        try:
+            resp = await client.get(f"{settings.print_service_url}/status")
+            return resp.json()
+        except Exception as exc:
+            return {"connected": False, "error": str(exc)}
+
+
 # ── products list ─────────────────────────────────────────────────────────────
 
 @router.get("/products")

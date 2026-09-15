@@ -37,6 +37,11 @@ header h1 { font-size: 1.15rem; }
 header button { padding: 0.4rem 0.7rem; cursor: pointer; font-size: 0.85rem; }
 .header-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 
+.printer-status { display: flex; align-items: center; gap: 4px; font-size: 0.8rem; color: #6b7280; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.printer-online .status-dot { background: #16a34a; }
+.printer-offline .status-dot { background: #dc2626; }
+
 main { padding: 1rem; }
 @media (min-width: 600px) { main { padding: 1.5rem; } }
 
