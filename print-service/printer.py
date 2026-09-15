@@ -215,10 +215,10 @@ async def printer_status(ble_address: str) -> dict:
         if len(payload) >= 5:
             result["battery_pct"] = payload[3]
             result["head_temp_c"] = payload[4]
+        # bytes[8-9] vary between sessions — meaning unknown, exposed raw for analysis
         if len(payload) >= 10:
-            result["firmware"] = f"{payload[8]}.{payload[9]}"
+            result["unknown_8_9"] = [payload[8], payload[9]]
 
-    logger.info("Printer status: battery=%s%% temp=%s°C ready=%s fw=%s",
-                result.get("battery_pct"), result.get("head_temp_c"),
-                result.get("ready"), result.get("firmware"))
+    logger.info("Printer status: battery=%s%% temp=%s°C ready=%s",
+                result.get("battery_pct"), result.get("head_temp_c"), result.get("ready"))
     return result
