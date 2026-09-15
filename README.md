@@ -42,18 +42,12 @@ Edit `.env`:
 |---|---|
 | `DB_PASSWORD` | PostgreSQL password |
 | `APP_PASS_1`, `APP_PASS_2` | Login passwords for user1/user2 |
-| `PRINTER_BLE_ADDRESS` | Printer name (e.g. `MXW01`) or BLE address |
+| `PRINTER_BLE_ADDRESS` | Set automatically on first start (see below) |
 | `REMOTE_BACKEND_URL` | VPS backend URL (if using remote DB) |
 | `PRINT_ENABLED` | `true` on printer machine, `false` on VPS |
 | `OPENAI_API_KEY` | For AI icon generation (optional) |
 
-Find your printer's BLE name/address:
-```bash
-cd print-service
-python3 -c "import asyncio; from bleak import BleakScanner; asyncio.run(BleakScanner.discover(timeout=5))" 2>&1 | grep -v Traceback
-```
-
-On macOS, CoreBluetooth hides hardware MAC addresses. Use the device name (e.g. `MXW01`) — the service caches the CoreBluetooth UUID after the first scan for fast subsequent prints.
+`PRINTER_BLE_ADDRESS` is configured automatically on first start: if the value is still the placeholder `XX:XX:XX:XX:XX:XX`, the start script scans nearby BLE devices and prompts you to pick the printer. The correct identifier is written to `.env` automatically — device name on macOS (CoreBluetooth), MAC address on Windows (WinRT).
 
 ### 2. Start everything
 
@@ -74,8 +68,14 @@ Frontend: http://localhost:3000
 
 ### 3. Restart print-service only
 
+**macOS / Linux:**
 ```bash
 ./scripts/restart-print-service.sh
+```
+
+**Windows:**
+```powershell
+./scripts/restart-print-service.ps1
 ```
 
 Useful after the BLE printer times out (idle disconnection). The service caches the CoreBluetooth UUID in memory; restarting clears the cache and forces a fresh BLE scan on the next print.
@@ -136,7 +136,7 @@ PRINT_ENABLED=false
 ```
 REMOTE_BACKEND_URL=https://<your-vps-domain>
 PRINT_ENABLED=true
-PRINTER_BLE_ADDRESS=MXW01
+PRINTER_BLE_ADDRESS=XX:XX:XX:XX:XX:XX   # filled in automatically on first start
 ```
 
 ## Running Tests
@@ -183,8 +183,4 @@ $trigger = New-ScheduledTaskTrigger -AtLogOn
 Register-ScheduledTask -TaskName 'LabelSystem' -Action $action -Trigger $trigger -RunLevel Highest
 ```
 
-**Find BLE device:**
-```powershell
-cd print-service
-.\.venv\Scripts\python.exe -c "import asyncio; from bleak import BleakScanner; asyncio.run(BleakScanner.discover(timeout=5))"
-```
+**BLE address:** configured automatically on first `start.ps1` — a scan runs and prompts you to pick the printer. The MAC address is written to `.env`.
