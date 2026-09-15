@@ -15,6 +15,8 @@ _FONT_CANDIDATES = [
     "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",       # Debian/Ubuntu
     "/usr/share/fonts/dejavu/DejaVuSans.ttf",                # Fedora/RHEL
     "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+    "C:/Windows/Fonts/arial.ttf",                            # Windows
+    "C:/Windows/Fonts/calibri.ttf",                          # Windows fallback
 ]
 
 
