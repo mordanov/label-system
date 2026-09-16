@@ -131,6 +131,26 @@ async def delete_product(
     return await _forward("POST", f"/products/{product_id}/delete", credentials)
 
 
+@router.post("/products/{product_id}/icon", response_model=ProductResponse)
+async def set_product_icon(
+    product_id: str,
+    body: dict,
+    credentials: HTTPBasicCredentials = Depends(security),
+    _: str = Depends(get_current_user),
+):
+    return await _forward("POST", f"/products/{product_id}/icon", credentials, json_body=body)
+
+
+@router.post("/products/{product_id}/units", response_model=ProductResponse)
+async def set_product_units(
+    product_id: str,
+    body: dict,
+    credentials: HTTPBasicCredentials = Depends(security),
+    _: str = Depends(get_current_user),
+):
+    return await _forward("POST", f"/products/{product_id}/units", credentials, json_body=body)
+
+
 # ── label-settings proxy ──────────────────────────────────────────────────────
 
 @router.get("/label-settings")

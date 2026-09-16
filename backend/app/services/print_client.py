@@ -7,8 +7,8 @@ async def send_to_printer(
     inventory_number: str,
     name: str,
     created_at: str,
-    icon_filename: str,
-    icon_bytes: bytes,
+    icon_filename: str | None,
+    icon_bytes: bytes | None,
     layout: LabelLayout | None = None,
 ) -> bool:
     if layout is None:
@@ -24,7 +24,7 @@ async def send_to_printer(
                     "icon_filename": icon_filename,
                     **{k: str(v) for k, v in layout.model_dump().items()},
                 },
-                files={"icon_file": (icon_filename, icon_bytes, "image/png")},
+                files={"icon_file": (icon_filename or "", icon_bytes or b"", "image/png")},
             )
             return resp.status_code == 200
     except (httpx.ConnectError, httpx.TimeoutException):
