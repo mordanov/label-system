@@ -3,6 +3,9 @@ import * as XLSX from 'xlsx'
 import { apiFetch } from '../api'
 import { useT } from '../LanguageContext'
 import IconGallery from './IconGallery'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 
 function parseXlsx(file) {
   return new Promise((resolve, reject) => {
@@ -32,7 +35,6 @@ export default function ImportPanel({ onCreated, onClose }) {
   const fileRef = useRef()
   const [fileName, setFileName] = useState('')
   const [names, setNames] = useState([])
-  const [totalRows, setTotalRows] = useState(0)
   const [checked, setChecked] = useState(new Set())
   const [icon, setIcon] = useState('')
   const [parsing, setParsing] = useState(false)
@@ -43,13 +45,12 @@ export default function ImportPanel({ onCreated, onClose }) {
   async function handleFile(e) {
     const file = e.target.files[0]
     if (!file) return
-    setResult(null); setError(null); setNames([]); setChecked(new Set()); setTotalRows(0)
+    setResult(null); setError(null); setNames([]); setChecked(new Set())
     setFileName(file.name)
     setParsing(true)
     try {
-      const { names: parsed, totalRows: total } = await parseXlsx(file)
+      const { names: parsed } = await parseXlsx(file)
       setNames(parsed)
-      setTotalRows(total)
       setChecked(new Set(parsed.map((_, i) => i)))
     } catch (err) {
       setError(err.message || t('importFailed'))
@@ -88,68 +89,72 @@ export default function ImportPanel({ onCreated, onClose }) {
   }
 
   return (
-    <>
-      <h2>{t('importTitle')}</h2>
+    <div className="p-6 flex flex-col gap-4">
+      <h2 className="font-semibold text-base">{t('importTitle')}</h2>
 
-      <div className="import-file-row">
-        <input type="file" accept=".xlsx" ref={fileRef} style={{ display: 'none' }} onChange={handleFile} />
-        <button type="button" className="btn-secondary" onClick={() => fileRef.current.click()}>
+      <div className="flex items-center gap-3 flex-wrap">
+        <input type="file" accept=".xlsx" ref={fileRef} className="hidden" onChange={handleFile} />
+        <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current.click()}>
           {t('importPickFile')}
-        </button>
+        </Button>
         {fileName && (
           <>
-            <span className="import-filename">{fileName}</span>
-            <button type="button" className="btn-link" onClick={() => {
-              setFileName(''); setNames([]); setChecked(new Set()); setResult(null); setError(null)
-            }}>✕</button>
+            <span className="text-sm text-muted-foreground">{fileName}</span>
+            <button
+              type="button"
+              className="text-muted-foreground hover:text-foreground text-sm underline"
+              onClick={() => { setFileName(''); setNames([]); setChecked(new Set()); setResult(null); setError(null) }}
+            >✕</button>
           </>
         )}
       </div>
 
-      <div className="import-icon-section">
-        <p className="import-label">{t('importSelectIcon')}</p>
+      <div>
+        <p className="text-sm text-foreground mb-1">{t('importSelectIcon')}</p>
         <IconGallery value={icon} onChange={setIcon} />
       </div>
 
-      {parsing && <p className="import-hint">⏳ {t('parsing')}…</p>}
+      {parsing && <p className="text-xs text-muted-foreground">⏳ {t('parsing')}…</p>}
 
       {!parsing && names.length > 0 && (
         <>
-          <p className="import-hint">{t('importFound', { n: names.length })}</p>
-          <div className="import-toolbar">
-            <button type="button" className="btn-link" onClick={() => setChecked(new Set(names.map((_, i) => i)))}>
+          <p className="text-xs text-muted-foreground">{t('importFound', { n: names.length })}</p>
+          <div className="flex gap-4">
+            <button type="button" className="text-sm text-primary underline" onClick={() => setChecked(new Set(names.map((_, i) => i)))}>
               {t('importSelectAll')}
             </button>
-            <button type="button" className="btn-link" onClick={() => setChecked(new Set())}>
+            <button type="button" className="text-sm text-primary underline" onClick={() => setChecked(new Set())}>
               {t('importDeselectAll')}
             </button>
           </div>
 
-          <div className="import-name-list">
+          <div className="max-h-52 overflow-y-auto rounded-md border border-border p-2 flex flex-col gap-0.5">
             {names.map((name, i) => (
-              <label key={i} className="import-name-item">
-                <input type="checkbox" checked={checked.has(i)} onChange={() => toggle(i)} />
+              <label key={i} className="flex items-center gap-2 py-1 px-1 rounded cursor-pointer hover:bg-accent text-sm select-none">
+                <Checkbox
+                  checked={checked.has(i)}
+                  onCheckedChange={() => toggle(i)}
+                />
                 <span>{name}</span>
               </label>
             ))}
           </div>
 
-          <button
+          <Button
             type="button"
-            className="btn-primary"
             disabled={busy || checked.size === 0}
             onClick={handleImport}
           >
             {busy ? t('importing') : t('importProducts', { n: checked.size })}
-          </button>
+          </Button>
         </>
       )}
 
       {!parsing && names.length === 0 && fileName && !error && result === null && (
-        <p className="warn">{t('importNoNames')}</p>
+        <p className="text-amber-600 text-sm">{t('importNoNames')}</p>
       )}
-      {result !== null && <p className="import-success">{t('importDone', { n: result })}</p>}
-      {error && <p className="error">{error}</p>}
-    </>
+      {result !== null && <p className="text-green-700 text-sm">{t('importDone', { n: result })}</p>}
+      {error && <p className="text-destructive text-sm">{error}</p>}
+    </div>
   )
 }

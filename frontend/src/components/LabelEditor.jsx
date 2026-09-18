@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { apiFetch } from '../api'
 import { useT } from '../LanguageContext'
+import { Button } from '@/components/ui/button'
 
 const SCALE = 2
 const LABEL_W = 384
@@ -67,126 +68,118 @@ export default function LabelEditor({ onClose }) {
     }
   }
 
-  if (!layout) return <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Loading…</div>
+  if (!layout) return <div className="p-8 text-center text-muted-foreground">Loading…</div>
 
   return (
-    <div>
-      <h2 style={{ marginBottom: 12 }}>{t('labelSettingsTitle')}</h2>
-      <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 12 }}>
-        {t('labelSettingsHint')}
-      </p>
+    <div className="p-6">
+      <h2 className="font-semibold text-base mb-1">{t('labelSettingsTitle')}</h2>
+      <p className="text-xs text-muted-foreground mb-4">{t('labelSettingsHint')}</p>
 
-      {/* Preview — horizontally scrollable on small screens */}
-      <div style={{ overflowX: 'auto', marginBottom: 16, WebkitOverflowScrolling: 'touch' }}>
-      <div style={{
-        position: 'relative',
-        width: LABEL_W * SCALE,
-        height: LABEL_H * SCALE,
-        background: 'white',
-        border: '1px solid #d1d5db',
-        boxShadow: '0 1px 4px #0001',
-        overflow: 'hidden',
-        userSelect: 'none',
-        cursor: 'default',
-      }}>
-        {/* Icon */}
-        <div
-          onMouseDown={e => startDrag(e, 'icon_x', 'icon_y')}
-          title="Drag to move icon"
-          style={{
-            position: 'absolute',
-            left: layout.icon_x * SCALE,
-            top: layout.icon_y * SCALE,
-            width: layout.icon_size * SCALE,
-            height: layout.icon_size * SCALE,
-            background: '#f0f9ff',
-            border: '2px dashed #7dd3fc',
-            borderRadius: 4,
-            cursor: 'grab',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 11,
-            color: '#6b7280',
-          }}
-        >icon</div>
+      <div className="overflow-x-auto mb-4">
+        <div style={{
+          position: 'relative',
+          width: LABEL_W * SCALE,
+          height: LABEL_H * SCALE,
+          background: 'white',
+          border: '1px solid #d1d5db',
+          boxShadow: '0 1px 4px #0001',
+          overflow: 'hidden',
+          userSelect: 'none',
+          cursor: 'default',
+        }}>
+          <div
+            onMouseDown={e => startDrag(e, 'icon_x', 'icon_y')}
+            title="Drag to move icon"
+            style={{
+              position: 'absolute',
+              left: layout.icon_x * SCALE,
+              top: layout.icon_y * SCALE,
+              width: layout.icon_size * SCALE,
+              height: layout.icon_size * SCALE,
+              background: '#f0f9ff',
+              border: '2px dashed #7dd3fc',
+              borderRadius: 4,
+              cursor: 'grab',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 11,
+              color: '#6b7280',
+            }}
+          >icon</div>
 
-        {/* Name */}
-        <div
-          onMouseDown={e => startDrag(e, 'name_x', 'name_y')}
-          title="Drag to move name"
-          style={{
-            position: 'absolute',
-            left: layout.name_x * SCALE,
-            top: layout.name_y * SCALE,
-            fontSize: layout.name_font_size * SCALE,
-            lineHeight: 1,
-            cursor: 'grab',
-            whiteSpace: 'nowrap',
-            background: '#fff7ed',
-            border: '1px dashed #fed7aa',
-            padding: '1px 3px',
-            borderRadius: 2,
-            color: '#111',
-          }}
-        >Product Name</div>
+          <div
+            onMouseDown={e => startDrag(e, 'name_x', 'name_y')}
+            title="Drag to move name"
+            style={{
+              position: 'absolute',
+              left: layout.name_x * SCALE,
+              top: layout.name_y * SCALE,
+              fontSize: layout.name_font_size * SCALE,
+              lineHeight: 1,
+              cursor: 'grab',
+              whiteSpace: 'nowrap',
+              background: '#fff7ed',
+              border: '1px dashed #fed7aa',
+              padding: '1px 3px',
+              borderRadius: 2,
+              color: '#111',
+            }}
+          >Product Name</div>
 
-        {/* Number */}
-        <div
-          onMouseDown={e => startDrag(e, 'number_x', 'number_y')}
-          title="Drag to move inventory number"
-          style={{
-            position: 'absolute',
-            left: layout.number_x * SCALE,
-            top: layout.number_y * SCALE,
-            fontSize: layout.number_font_size * SCALE,
-            lineHeight: 1,
-            cursor: 'grab',
-            whiteSpace: 'nowrap',
-            background: '#f0fdf4',
-            border: '1px dashed #86efac',
-            padding: '1px 3px',
-            borderRadius: 2,
-            fontWeight: 'bold',
-            color: '#111',
-          }}
-        >#000001</div>
+          <div
+            onMouseDown={e => startDrag(e, 'number_x', 'number_y')}
+            title="Drag to move inventory number"
+            style={{
+              position: 'absolute',
+              left: layout.number_x * SCALE,
+              top: layout.number_y * SCALE,
+              fontSize: layout.number_font_size * SCALE,
+              lineHeight: 1,
+              cursor: 'grab',
+              whiteSpace: 'nowrap',
+              background: '#f0fdf4',
+              border: '1px dashed #86efac',
+              padding: '1px 3px',
+              borderRadius: 2,
+              fontWeight: 'bold',
+              color: '#111',
+            }}
+          >#000001</div>
 
-        {/* Date */}
-        <div
-          onMouseDown={e => startDrag(e, 'date_x', 'date_y')}
-          title="Drag to move date"
-          style={{
-            position: 'absolute',
-            left: layout.date_x * SCALE,
-            top: layout.date_y * SCALE,
-            fontSize: layout.date_font_size * SCALE,
-            lineHeight: 1,
-            cursor: 'grab',
-            whiteSpace: 'nowrap',
-            background: '#fdf4ff',
-            border: '1px dashed #e9d5ff',
-            padding: '1px 3px',
-            borderRadius: 2,
-            color: '#111',
-          }}
-        >2024-01-15</div>
-      </div>
+          <div
+            onMouseDown={e => startDrag(e, 'date_x', 'date_y')}
+            title="Drag to move date"
+            style={{
+              position: 'absolute',
+              left: layout.date_x * SCALE,
+              top: layout.date_y * SCALE,
+              fontSize: layout.date_font_size * SCALE,
+              lineHeight: 1,
+              cursor: 'grab',
+              whiteSpace: 'nowrap',
+              background: '#fdf4ff',
+              border: '1px dashed #e9d5ff',
+              padding: '1px 3px',
+              borderRadius: 2,
+              color: '#111',
+            }}
+          >2024-01-15</div>
+        </div>
       </div>
 
-      {/* Sliders */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 24px' }}>
+      <div className="grid grid-cols-2 gap-x-6 gap-y-3 mb-4">
         <Slider label={t('labelIconSize')} value={layout.icon_size} min={32} max={160} onChange={v => set('icon_size', v)} />
         <Slider label={t('labelNameFont')} value={layout.name_font_size} min={10} max={48} onChange={v => set('name_font_size', v)} />
         <Slider label={t('labelNumberFont')} value={layout.number_font_size} min={18} max={80} onChange={v => set('number_font_size', v)} />
         <Slider label={t('labelDateFont')} value={layout.date_font_size} min={8} max={32} onChange={v => set('date_font_size', v)} />
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
-        <button className="btn-secondary" onClick={() => setLayout(DEFAULTS)}>{t('labelReset')}</button>
-        <button className="btn-primary" onClick={save} disabled={saving}>
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" onClick={() => setLayout(DEFAULTS)}>{t('labelReset')}</Button>
+        <Button onClick={save} disabled={saving}>
           {saving ? t('labelSaving') : t('labelSave')}
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -194,15 +187,15 @@ export default function LabelEditor({ onClose }) {
 
 function Slider({ label, value, min, max, onChange }) {
   return (
-    <label style={{ fontSize: 13, display: 'block' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+    <label className="block text-sm">
+      <div className="flex justify-between mb-0.5">
         <span>{label}</span>
-        <span style={{ color: '#6b7280' }}>{value}px</span>
+        <span className="text-muted-foreground">{value}px</span>
       </div>
       <input
         type="range" min={min} max={max} value={value}
         onChange={e => onChange(Number(e.target.value))}
-        style={{ width: '100%' }}
+        className="w-full accent-primary"
       />
     </label>
   )

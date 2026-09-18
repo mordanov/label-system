@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { apiFetch } from '../api'
 import { useT } from '../LanguageContext'
+import { Input } from '@/components/ui/input'
 
 export default function SearchBar({ value, onChange }) {
   const { t } = useT()
@@ -35,8 +36,8 @@ export default function SearchBar({ value, onChange }) {
   }
 
   return (
-    <div className="search-bar" ref={wrapRef} style={{ position: 'relative' }}>
-      <input
+    <div className="mb-4 relative w-64 max-w-full" ref={wrapRef}>
+      <Input
         value={value}
         onChange={e => onChange(e.target.value)}
         onFocus={() => suggestions.length > 0 && setOpen(true)}
@@ -44,9 +45,13 @@ export default function SearchBar({ value, onChange }) {
         autoComplete="off"
       />
       {open && (
-        <ul className="search-suggestions">
+        <ul className="absolute top-full left-0 z-50 mt-1 min-w-full max-w-[400px] rounded-md border border-border bg-background shadow-md list-none overflow-hidden">
           {suggestions.map(name => (
-            <li key={name} onMouseDown={() => pick(name)}>{name}</li>
+            <li
+              key={name}
+              className="px-3 py-2 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
+              onMouseDown={() => pick(name)}
+            >{name}</li>
           ))}
         </ul>
       )}

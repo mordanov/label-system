@@ -3,6 +3,10 @@ import { apiFetch } from '../api'
 import { useT } from '../LanguageContext'
 import SearchBar from './SearchBar'
 import IconPickerPanel from './IconPickerPanel'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { cn } from '@/lib/utils'
 
 const fmt = iso => iso ? new Date(iso).toISOString().slice(0, 10) : ''
 const PAGE_SIZES = [50, 100, 200]
@@ -20,13 +24,11 @@ export default function ProductTable({ refresh, printEnabled = true }) {
   })
   const [page, setPage] = useState(0)
 
-  // icon modal
-  const [iconModal, setIconModal] = useState(null) // product object
+  const [iconModal, setIconModal] = useState(null)
   const [pendingIcon, setPendingIcon] = useState('')
   const [iconSaving, setIconSaving] = useState(false)
 
-  // units inline edit
-  const [unitsEdit, setUnitsEdit] = useState(null) // { id, value }
+  const [unitsEdit, setUnitsEdit] = useState(null)
 
   async function load() {
     const params = new URLSearchParams()
@@ -106,38 +108,43 @@ export default function ProductTable({ refresh, printEnabled = true }) {
 
   return (
     <div>
-      <div className="table-toolbar">
+      <div className="flex items-center gap-4 mb-3 flex-wrap">
         <SearchBar value={q} onChange={v => { setQ(v); setPage(0) }} />
-        <label className="toggle-deleted">
-          <input type="checkbox" checked={showDeleted} onChange={e => {
+        <label className="flex items-center gap-1.5 text-sm cursor-pointer whitespace-nowrap">
+          <input
+            type="checkbox"
+            checked={showDeleted}
+            onChange={e => {
               try { localStorage.setItem('showDeleted', e.target.checked) } catch {}
               setShowDeleted(e.target.checked)
-            }} />
-          {' '}{t('showDeleted')}
+            }}
+          />
+          {t('showDeleted')}
         </label>
       </div>
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>{t('colNum')}</th>
-              <th className="col-icon">{t('colIcon')}</th>
-              <th>{t('colName')}</th>
-              <th className="col-units">{t('colUnits')}</th>
-              <th className="col-date">{t('colDate')}</th>
-              <th className="col-status">{t('colStatus')}</th>
-              <th>{t('colActions')}</th>
-            </tr>
-          </thead>
-          <tbody>
+
+      <div className="overflow-x-auto -webkit-overflow-scrolling-touch rounded-lg border border-border bg-background">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t('colNum')}</TableHead>
+              <TableHead className="hidden sm:table-cell">{t('colIcon')}</TableHead>
+              <TableHead>{t('colName')}</TableHead>
+              <TableHead className="hidden md:table-cell">{t('colUnits')}</TableHead>
+              <TableHead className="hidden lg:table-cell">{t('colDate')}</TableHead>
+              <TableHead className="hidden lg:table-cell">{t('colStatus')}</TableHead>
+              <TableHead>{t('colActions')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {visible.map(p => (
-              <tr key={p.id} className={p.is_deleted ? 'deleted-row' : ''}>
-                <td>{p.inventory_number}</td>
-                <td className="col-icon">
+              <TableRow key={p.id} className={p.is_deleted ? 'opacity-50' : ''}>
+                <TableCell>{p.inventory_number}</TableCell>
+                <TableCell className="hidden sm:table-cell">
                   {!p.is_deleted ? (
                     <button
                       type="button"
-                      className="icon-edit-btn"
+                      className="rounded p-0.5 hover:outline hover:outline-2 hover:outline-primary opacity-85 hover:opacity-100 transition-opacity inline-flex"
                       onClick={() => openIconModal(p)}
                       title={t('changeIcon')}
                     >
@@ -146,94 +153,108 @@ export default function ProductTable({ refresh, printEnabled = true }) {
                   ) : (
                     <img src={`/api/icons/${p.icon_filename}`} width={32} height={32} alt="" />
                   )}
-                </td>
-                <td>{p.name}</td>
-                <td className="col-units">
+                </TableCell>
+                <TableCell className={p.is_deleted ? 'line-through' : ''}>{p.name}</TableCell>
+                <TableCell className="hidden md:table-cell">
                   {!p.is_deleted && unitsEdit?.id === p.id ? (
-                    <span className="units-cell">
-                      <input
-                        autoFocus
-                        type="number" min={1}
-                        className="units-edit-input"
-                        value={unitsEdit.value}
-                        onChange={e => setUnitsEdit(u => ({ ...u, value: e.target.value }))}
-                        onBlur={() => saveUnits(p.id, unitsEdit.value)}
-                        onKeyDown={e => handleUnitsKey(e, p.id, unitsEdit.value)}
-                      />
-                    </span>
+                    <input
+                      autoFocus
+                      type="number" min={1}
+                      className="w-16 px-1.5 py-0.5 border border-primary rounded text-xs text-center outline-none"
+                      value={unitsEdit.value}
+                      onChange={e => setUnitsEdit(u => ({ ...u, value: e.target.value }))}
+                      onBlur={() => saveUnits(p.id, unitsEdit.value)}
+                      onKeyDown={e => handleUnitsKey(e, p.id, unitsEdit.value)}
+                    />
                   ) : (
                     <span
-                      className={`units-cell${!p.is_deleted ? ' units-clickable' : ''}`}
+                      className={cn("flex items-center gap-1 min-w-[4rem]", !p.is_deleted && "cursor-pointer hover:text-primary hover:underline")}
                       onClick={!p.is_deleted ? () => setUnitsEdit({ id: p.id, value: p.units ?? '' }) : undefined}
-                      title={!p.is_deleted ? t('changeIcon') : undefined}
                     >
                       {p.units ?? '—'}
                     </span>
                   )}
-                </td>
-                <td className="col-date">{fmt(p.created_at)}</td>
-                <td className="col-status">
+                </TableCell>
+                <TableCell className="hidden lg:table-cell">{fmt(p.created_at)}</TableCell>
+                <TableCell className="hidden lg:table-cell">
                   {p.is_deleted
-                    ? <span className="status-deleted">{t('statusDeletedBy', { by: p.deleted_by, on: fmt(p.deleted_at) })}</span>
-                    : <span className="status-active">{t('statusActive')}</span>}
-                </td>
-                <td>
+                    ? <Badge variant="secondary" className="text-muted-foreground">{t('statusDeletedBy', { by: p.deleted_by, on: fmt(p.deleted_at) })}</Badge>
+                    : <Badge variant="outline" className="text-green-700 border-green-300">{t('statusActive')}</Badge>}
+                </TableCell>
+                <TableCell>
                   {!p.is_deleted && (
-                    <>
+                    <div className="flex items-center gap-1">
                       {printEnabled && (
-                        <>
-                          <button onClick={() => reprint(p.id)} disabled={!!busy[p.id]}>
-                            {busy[p.id] === 'reprint' ? '…' : t('reprint')}
-                          </button>
-                          {' '}
-                        </>
+                        <Button
+                          size="sm" variant="outline"
+                          onClick={() => reprint(p.id)}
+                          disabled={!!busy[p.id]}
+                        >
+                          {busy[p.id] === 'reprint' ? '…' : t('reprint')}
+                        </Button>
                       )}
-                      <button className="btn-danger" onClick={() => del(p.id, p.name)} disabled={!!busy[p.id]}>
+                      <Button
+                        size="sm" variant="outline"
+                        className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                        onClick={() => del(p.id, p.name)}
+                        disabled={!!busy[p.id]}
+                      >
                         {busy[p.id] === 'delete' ? '…' : t('deleteBtn')}
-                      </button>
-                    </>
+                      </Button>
+                    </div>
                   )}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
             {visible.length === 0 && (
-              <tr><td colSpan={7} style={{textAlign:'center',color:'#888',padding:'2rem'}}>{t('noProducts')}</td></tr>
+              <TableRow>
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">{t('noProducts')}</TableCell>
+              </TableRow>
             )}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
-      {/* Pagination */}
-      <div className="pagination">
-        <span className="page-size-label">{t('pageSize')}</span>
+      <div className="flex items-center gap-1.5 flex-wrap mt-3 text-sm text-foreground">
+        <span className="text-muted-foreground mr-1">{t('pageSize')}</span>
         {PAGE_SIZES.map(n => (
           <button
             key={n}
-            className={`page-size-btn${pageSize === n ? ' active' : ''}`}
+            className={cn(
+              "px-2 py-1 rounded border text-xs transition-colors",
+              pageSize === n
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-background border-border hover:bg-accent"
+            )}
             onClick={() => changePageSize(n)}
           >{n}</button>
         ))}
-        <span className="page-spacer" />
-        <button className="page-nav" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={safePage === 0}>
+        <span className="flex-1" />
+        <Button size="sm" variant="outline" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={safePage === 0}>
           {t('pagePrev')}
-        </button>
-        <span className="page-info">{safePage + 1} / {totalPages}</span>
-        <button className="page-nav" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={safePage >= totalPages - 1}>
+        </Button>
+        <span className="min-w-[4rem] text-center text-muted-foreground">{safePage + 1} / {totalPages}</span>
+        <Button size="sm" variant="outline" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={safePage >= totalPages - 1}>
           {t('pageNext')}
-        </button>
+        </Button>
       </div>
 
-      {/* Icon change modal */}
       {iconModal && (
-        <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) setIconModal(null) }}>
-          <div className="modal">
-            <button className="modal-close" onClick={() => setIconModal(null)}>✕</button>
-            <h2>{t('changeIcon')} — {iconModal.name}</h2>
+        <div
+          className="fixed inset-0 bg-black/45 flex items-start sm:items-center justify-center z-50 p-4 overflow-y-auto"
+          onClick={e => { if (e.target === e.currentTarget) setIconModal(null) }}
+        >
+          <div className="bg-background rounded-xl w-full max-w-lg max-h-[calc(100vh-2rem)] overflow-y-auto relative shrink-0 p-6">
+            <button
+              className="absolute top-3 right-3 text-muted-foreground hover:text-foreground leading-none p-1"
+              onClick={() => setIconModal(null)}
+            >✕</button>
+            <h2 className="font-semibold mb-4 pr-8">{t('changeIcon')} — {iconModal.name}</h2>
             <IconPickerPanel value={pendingIcon} onChange={setPendingIcon} productName={iconModal.name} />
-            <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
-              <button className="btn-primary" onClick={saveIcon} disabled={iconSaving}>
+            <div className="mt-4 flex justify-end">
+              <Button onClick={saveIcon} disabled={iconSaving}>
                 {iconSaving ? t('saving') : t('labelSave')}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

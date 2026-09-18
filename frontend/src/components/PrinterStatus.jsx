@@ -29,8 +29,11 @@ export default function PrinterStatus() {
   }
 
   return (
-    <span className={`printer-status ${status.connected ? 'printer-online' : 'printer-offline'}`} title={titleParts.join(' · ')}>
-      <span className="status-dot" />
+    <span
+      className="flex items-center gap-1 text-xs text-muted-foreground"
+      title={titleParts.join(' · ')}
+    >
+      <span className={`size-2 rounded-full shrink-0 ${status.connected ? 'bg-green-600' : 'bg-red-600'}`} />
       {bat != null && `${bat}%`}
     </span>
   )

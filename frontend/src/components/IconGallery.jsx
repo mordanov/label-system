@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { apiFetch } from '../api'
+import { cn } from '@/lib/utils'
 
 export default function IconGallery({ value, onChange }) {
   const [icons, setIcons] = useState([])
@@ -11,23 +12,33 @@ export default function IconGallery({ value, onChange }) {
       .finally(() => setLoading(false))
   }, [])
 
-  if (loading) return <p className="import-hint">⏳ …</p>
+  if (loading) return <p className="text-xs text-muted-foreground">⏳ …</p>
 
   return (
-    <div className="icon-gallery">
+    <div className="flex flex-nowrap overflow-x-auto gap-2 my-3 pb-1">
       <button
         type="button"
-        className={`icon-btn icon-btn-none${!value ? ' selected' : ''}`}
+        className={cn(
+          "size-14 flex items-center justify-center rounded-md border-2 shrink-0 transition-colors",
+          !value
+            ? "border-primary bg-primary/10 text-primary"
+            : "border-border bg-background text-muted-foreground hover:border-border/70"
+        )}
         onClick={() => onChange('')}
         title="No icon"
       >
-        <span>—</span>
+        <span className="text-lg">—</span>
       </button>
       {icons.map(filename => (
         <button
           key={filename}
           type="button"
-          className={`icon-btn${value === filename ? ' selected' : ''}`}
+          className={cn(
+            "rounded-md border-2 p-1 shrink-0 transition-colors",
+            value === filename
+              ? "border-primary bg-primary/10"
+              : "border-border bg-background hover:border-border/70"
+          )}
           onClick={() => onChange(filename)}
         >
           <img src={`/api/icons/${filename}`} alt={filename} width={48} height={48} />

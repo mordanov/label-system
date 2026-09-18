@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { apiFetch } from '../api'
 import { useT } from '../LanguageContext'
 import IconGallery from './IconGallery'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 export default function IconPickerPanel({ value, onChange, productName = '' }) {
   const { t } = useT()
@@ -35,33 +37,38 @@ export default function IconPickerPanel({ value, onChange, productName = '' }) {
   return (
     <>
       <IconGallery value={value} onChange={onChange} />
-      <button type="button" className="btn-secondary gen-toggle" onClick={() => setShowGen(v => !v)}>
+      <Button type="button" variant="outline" size="sm" onClick={() => setShowGen(v => !v)}>
         {showGen ? t('hideGenerator') : t('generateIcon')}
-      </button>
+      </Button>
       {showGen && (
-        <div className="gen-panel">
-          <input
-            value={genName}
-            onChange={e => setGenName(e.target.value)}
-            placeholder={t('describeIcon')}
-          />
-          <button type="button" onClick={() => handleGenerate()} disabled={genBusy}>
-            {genBusy ? t('generating') : t('generate')}
-          </button>
-          {genError && <p className="error">{genError}</p>}
+        <div className="mt-3 flex flex-col gap-3">
+          <div className="flex gap-2">
+            <Input
+              value={genName}
+              onChange={e => setGenName(e.target.value)}
+              placeholder={t('describeIcon')}
+            />
+            <Button type="button" onClick={() => handleGenerate()} disabled={genBusy} size="sm">
+              {genBusy ? t('generating') : t('generate')}
+            </Button>
+          </div>
+          {genError && <p className="text-destructive text-sm">{genError}</p>}
           {genResult && (
-            <div className="gen-preview">
-              {genResult.exists && <p className="hint">{t('existingIconFound')}</p>}
+            <div className="flex items-center gap-4">
               <img
                 src={`data:image/png;base64,${genResult.image_b64}`}
                 alt="generated icon"
                 width={80} height={80}
+                className="rounded-md border border-border"
               />
-              <div className="gen-actions">
-                <button type="button" onClick={handleUseGenerated}>{t('useThis')}</button>
-                <button type="button" onClick={() => handleGenerate(true)} disabled={genBusy}>
-                  {t('tryAgain')}
-                </button>
+              <div className="flex flex-col gap-2">
+                {genResult.exists && <p className="text-xs text-muted-foreground">{t('existingIconFound')}</p>}
+                <div className="flex gap-2">
+                  <Button type="button" size="sm" onClick={handleUseGenerated}>{t('useThis')}</Button>
+                  <Button type="button" size="sm" variant="outline" onClick={() => handleGenerate(true)} disabled={genBusy}>
+                    {t('tryAgain')}
+                  </Button>
+                </div>
               </div>
             </div>
           )}

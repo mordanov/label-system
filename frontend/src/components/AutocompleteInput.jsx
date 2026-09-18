@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
 
 export default function AutocompleteInput({ value, onChange, placeholder, required, names = [], className, style }) {
   const [open, setOpen] = useState(false)
@@ -21,8 +23,8 @@ export default function AutocompleteInput({ value, onChange, placeholder, requir
   }, [])
 
   return (
-    <div ref={wrapRef} style={{ position: 'relative', ...style }}>
-      <input
+    <div ref={wrapRef} className="relative" style={style}>
+      <Input
         value={value}
         onChange={e => onChange(e.target.value)}
         onFocus={() => suggestions.length > 0 && setOpen(true)}
@@ -30,12 +32,15 @@ export default function AutocompleteInput({ value, onChange, placeholder, requir
         required={required}
         className={className}
         autoComplete="off"
-        style={{ width: '100%' }}
       />
       {open && (
-        <ul className="search-suggestions">
+        <ul className="absolute top-full left-0 z-50 mt-1 min-w-[260px] max-w-[400px] rounded-md border border-border bg-background shadow-md list-none overflow-hidden">
           {suggestions.map(name => (
-            <li key={name} onMouseDown={() => { onChange(name); setOpen(false) }}>{name}</li>
+            <li
+              key={name}
+              className="px-3 py-2 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
+              onMouseDown={() => { onChange(name); setOpen(false) }}
+            >{name}</li>
           ))}
         </ul>
       )}

@@ -3,6 +3,10 @@ import { apiFetch } from '../api'
 import { useT } from '../LanguageContext'
 import IconPickerPanel from './IconPickerPanel'
 import AutocompleteInput from './AutocompleteInput'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 export default function CreateForm({ onCreated, printEnabled = true }) {
   const { t } = useT()
@@ -12,6 +16,7 @@ export default function CreateForm({ onCreated, printEnabled = true }) {
   useEffect(() => {
     apiFetch('/products/names').then(setNames).catch(() => {})
   }, [])
+
   const [icon, setIcon] = useState('')
   const [qty, setQty] = useState(1)
   const [units, setUnits] = useState('')
@@ -52,41 +57,44 @@ export default function CreateForm({ onCreated, printEnabled = true }) {
     : printEnabled ? t('addAndPrint') : t('add')
 
   return (
-    <form className="create-form" onSubmit={handleSubmit}>
-      <h2>{t('addProduct')}</h2>
-      <AutocompleteInput
-        value={name} onChange={setName}
-        placeholder={t('productName')} required
-        names={names}
-      />
-      <IconPickerPanel value={icon} onChange={setIcon} productName={name} />
-
-      <div className="units-row">
-        <label className="units-label">{t('unitsPerProduct')}</label>
-        <input
-          type="number" min={1} value={units}
-          onChange={e => setUnits(e.target.value)}
-          className="units-input"
-          placeholder={t('unitsPlaceholder')}
-        />
-      </div>
-
-      {warn && printEnabled && <p className="warn">{t('savedPrintFailed')}</p>}
-      {saved && <p>{t('saved')}</p>}
-      {error && <p className="error">{error}</p>}
-
-      <div className="form-actions">
-        <div />
-        <div className="form-submit-row">
-          <button type="submit" disabled={busy}>{btnLabel}</button>
-          <input
-            type="number" min={1} max={99} value={qty}
-            onChange={e => setQty(Math.max(1, Math.min(99, parseInt(e.target.value) || 1)))}
-            className="qty-input"
-            title={t('qty')}
+    <Card className="mb-6 max-w-xl">
+      <CardHeader>
+        <CardTitle>{t('addProduct')}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <AutocompleteInput
+            value={name} onChange={setName}
+            placeholder={t('productName')} required
+            names={names}
           />
-        </div>
-      </div>
-    </form>
+          <IconPickerPanel value={icon} onChange={setIcon} productName={name} />
+
+          <div className="flex items-center gap-2">
+            <Label className="whitespace-nowrap">{t('unitsPerProduct')}</Label>
+            <Input
+              type="number" min={1} value={units}
+              onChange={e => setUnits(e.target.value)}
+              className="w-20 text-center"
+              placeholder={t('unitsPlaceholder')}
+            />
+          </div>
+
+          {warn && printEnabled && <p className="text-amber-600 text-sm">{t('savedPrintFailed')}</p>}
+          {saved && <p className="text-sm text-muted-foreground">{t('saved')}</p>}
+          {error && <p className="text-destructive text-sm">{error}</p>}
+
+          <div className="flex items-center justify-end gap-2">
+            <Button type="submit" disabled={busy}>{btnLabel}</Button>
+            <Input
+              type="number" min={1} max={99} value={qty}
+              onChange={e => setQty(Math.max(1, Math.min(99, parseInt(e.target.value) || 1)))}
+              className="w-14 text-center"
+              title={t('qty')}
+            />
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   )
 }
