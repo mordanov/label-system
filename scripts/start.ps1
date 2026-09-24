@@ -81,3 +81,5 @@ if (-not $alreadyRunning) {
 }
 
 Write-Host '==> Done. Frontend: http://localhost:3000  Backend: http://localhost:8000'
+
+Start-Process http://localhost:3000
