@@ -54,3 +54,5 @@ echo $! > "$PID_FILE"
 echo "==> print-service started (PID $!), log: $LOG_FILE"
 
 echo "==> Done. Frontend: http://localhost:3000  Backend: http://localhost:8000"
+
+open http://localhost:3000
