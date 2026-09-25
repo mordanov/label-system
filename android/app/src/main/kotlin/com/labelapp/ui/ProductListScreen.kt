@@ -44,7 +44,7 @@ fun ProductListScreen(vm: AppViewModel, onSettings: () -> Unit, onAdd: () -> Uni
             }
         }
     ) { padding ->
-        Column(Modifier.padding(padding)) {
+        Column(Modifier.padding(padding).fillMaxSize()) {
             TextField(
                 value = query,
                 onValueChange = vm::setQuery,
@@ -53,7 +53,7 @@ fun ProductListScreen(vm: AppViewModel, onSettings: () -> Unit, onAdd: () -> Uni
                 singleLine = true,
             )
 
-            LazyColumn {
+            LazyColumn(Modifier.weight(1f)) {
                 items(products, key = { it.id }) { product ->
                     ProductRow(product, vm::reprint, vm::softDelete)
                     HorizontalDivider()
