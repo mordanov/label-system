@@ -2,6 +2,7 @@ package com.labelapp.ui
 
 import android.app.Application
 import android.graphics.BitmapFactory
+import android.util.Base64
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.labelapp.ble.BleManager
@@ -11,8 +12,12 @@ import com.labelapp.data.InventoryCounter
 import com.labelapp.data.Prefs
 import com.labelapp.data.Product
 import com.labelapp.label.LabelRenderer
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import org.json.JSONArray
+import java.net.HttpURLConnection
+import java.net.URL
 import java.time.LocalDate
 
 sealed class PrintState {
@@ -20,6 +25,13 @@ sealed class PrintState {
     object Printing : PrintState()
     object Done : PrintState()
     data class Error(val msg: String) : PrintState()
+}
+
+sealed class SyncState {
+    object Idle : SyncState()
+    object Syncing : SyncState()
+    data class Done(val imported: Int) : SyncState()
+    data class Error(val msg: String) : SyncState()
 }
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
@@ -64,6 +76,50 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun clearPrintState() { _printState.value = PrintState.Idle }
+
+    private val _syncState = MutableStateFlow<SyncState>(SyncState.Idle)
+    val syncState: StateFlow<SyncState> = _syncState
+
+    fun syncFromServer() = viewModelScope.launch(Dispatchers.IO) {
+        _syncState.value = SyncState.Syncing
+        try {
+            val conn = URL("${prefs.serverUrl.trimEnd('/')}/api/products").openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.setRequestProperty(
+                "Authorization",
+                "Basic ${Base64.encodeToString("${prefs.syncUsername}:${prefs.syncPassword}".toByteArray(), Base64.NO_WRAP)}"
+            )
+            conn.connectTimeout = 15_000
+            conn.readTimeout = 15_000
+            if (conn.responseCode != 200) error("HTTP ${conn.responseCode}")
+            val arr = JSONArray(conn.inputStream.bufferedReader().readText())
+            var count = 0
+            var maxNum = 0
+            for (i in 0 until arr.length()) {
+                val obj = arr.getJSONObject(i)
+                if (obj.optBoolean("is_deleted", false)) continue
+                val invNum = obj.getString("inventory_number")
+                if (dao.findByInventoryNumber(invNum) != null) continue
+                dao.insert(Product(
+                    inventoryNumber = invNum,
+                    name = obj.getString("name"),
+                    iconFilename = obj.optString("icon_filename", "placeholder.png"),
+                    createdAt = obj.getString("created_at").take(10),
+                ))
+                count++
+                maxNum = maxOf(maxNum, invNum.toIntOrNull() ?: 0)
+            }
+            if (maxNum > 0) {
+                val cur = dao.getCounter()?.lastNumber ?: 0
+                if (maxNum > cur) dao.upsertCounter(InventoryCounter(lastNumber = maxNum))
+            }
+            _syncState.value = SyncState.Done(count)
+        } catch (e: Exception) {
+            _syncState.value = SyncState.Error(e.message ?: "Ошибка синхронизации")
+        }
+    }
+
+    fun clearSyncState() { _syncState.value = SyncState.Idle }
 
     private suspend fun doPrint(product: Product) {
         val address = prefs.bleAddress ?: run {

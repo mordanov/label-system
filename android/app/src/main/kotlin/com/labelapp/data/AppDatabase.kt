@@ -39,6 +39,9 @@ interface ProductDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertCounter(counter: InventoryCounter)
+
+    @Query("SELECT * FROM products WHERE inventoryNumber = :num LIMIT 1")
+    suspend fun findByInventoryNumber(num: String): Product?
 }
 
 @Database(

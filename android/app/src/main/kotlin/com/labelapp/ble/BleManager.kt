@@ -44,6 +44,8 @@ object BleManager {
         val servicesDef   = CompletableDeferred<Unit>()
         val descriptorDef = CompletableDeferred<Unit>()
 
+        val writeDone = Channel<Unit>(Channel.UNLIMITED)
+
         val cb = object : BluetoothGattCallback() {
             override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
@@ -62,6 +64,10 @@ object BleManager {
 
             override fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
                 descriptorDef.complete(Unit)
+            }
+
+            override fun onCharacteristicWrite(gatt: BluetoothGatt, c: BluetoothGattCharacteristic, status: Int) {
+                writeDone.trySend(Unit)
             }
 
             override fun onCharacteristicChanged(gatt: BluetoothGatt, c: BluetoothGattCharacteristic, value: ByteArray) {
@@ -92,12 +98,15 @@ object BleManager {
             withTimeout(5_000) { descriptorDef.await() }
 
             suspend fun writeControl(cmdId: Int, data: ByteArray, useCrc: Boolean) {
+                // drain stale acks before each control write
+                while (writeDone.tryReceive().isSuccess) {}
                 @Suppress("DEPRECATION")
                 controlChar.value = pkt(cmdId, data, useCrc)
                 controlChar.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
                 @Suppress("DEPRECATION")
                 gatt.writeCharacteristic(controlChar)
-                delay(10)
+                // wait for ack or fall back to fixed delay
+                withTimeoutOrNull(100) { writeDone.receive() } ?: delay(10)
             }
 
             suspend fun waitFor(cmdId: Int, timeoutMs: Long): ByteArray = withTimeout(timeoutMs) {
@@ -123,16 +132,17 @@ object BleManager {
             val a9 = waitFor(0xA9, 7_000)
             if (a9.isEmpty() || a9[0] != 0.toByte()) error("Print start rejected (${a9.hex()})")
 
-            // Image data in 20-byte chunks
+            // Image data in 20-byte chunks — wait for each ack to prevent dropped writes
             @Suppress("DEPRECATION")
             dataChar.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
             var i = 0
             while (i < imageData.size) {
+                while (writeDone.tryReceive().isSuccess) {} // drain stale
                 @Suppress("DEPRECATION")
                 dataChar.value = imageData.copyOfRange(i, minOf(i + 20, imageData.size))
                 @Suppress("DEPRECATION")
                 gatt.writeCharacteristic(dataChar)
-                delay(3)
+                withTimeoutOrNull(30) { writeDone.receive() } ?: delay(3)
                 i += 20
             }
 
