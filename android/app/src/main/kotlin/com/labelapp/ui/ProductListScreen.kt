@@ -19,6 +19,7 @@ fun ProductListScreen(vm: AppViewModel, onSettings: () -> Unit, onAdd: () -> Uni
     val products by vm.products.collectAsState()
     val query by vm.query.collectAsState()
     val printState by vm.printState.collectAsState()
+    val loadError by vm.loadError.collectAsState()
 
     LaunchedEffect(printState) {
         if (printState is PrintState.Done) {
@@ -32,6 +33,9 @@ fun ProductListScreen(vm: AppViewModel, onSettings: () -> Unit, onAdd: () -> Uni
             TopAppBar(
                 title = { Text("Этикетки") },
                 actions = {
+                    IconButton(onClick = { vm.loadProducts() }) {
+                        Text("↻", style = MaterialTheme.typography.titleLarge)
+                    }
                     IconButton(onClick = onSettings) {
                         Text("⚙", style = MaterialTheme.typography.titleLarge)
                     }
@@ -45,6 +49,21 @@ fun ProductListScreen(vm: AppViewModel, onSettings: () -> Unit, onAdd: () -> Uni
         }
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
+            if (loadError != null) {
+                Row(
+                    Modifier.fillMaxWidth().padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "Ошибка: $loadError",
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    TextButton(onClick = { vm.loadProducts() }) { Text("Повторить") }
+                }
+            }
+
             TextField(
                 value = query,
                 onValueChange = vm::setQuery,
@@ -89,7 +108,7 @@ fun ProductListScreen(vm: AppViewModel, onSettings: () -> Unit, onAdd: () -> Uni
 private fun ProductRow(
     product: com.labelapp.data.Product,
     onReprint: (com.labelapp.data.Product) -> Unit,
-    onDelete: (Int) -> Unit,
+    onDelete: (String) -> Unit,
 ) {
     val ctx = LocalContext.current
     val bitmap = remember(product.iconFilename) {

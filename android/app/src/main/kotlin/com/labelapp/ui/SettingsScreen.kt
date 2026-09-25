@@ -16,7 +16,6 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
     val scanned by vm.scannedDevices.collectAsState()
-    val syncState by vm.syncState.collectAsState()
     var address by remember { mutableStateOf(vm.prefs.bleAddress ?: "") }
     var scanning by remember { mutableStateOf(false) }
     var serverUrl by remember { mutableStateOf(vm.prefs.serverUrl) }
@@ -75,7 +74,7 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
             Spacer(Modifier.height(24.dp))
             HorizontalDivider()
             Spacer(Modifier.height(16.dp))
-            Text("Импорт из веб-приложения", style = MaterialTheme.typography.titleMedium)
+            Text("Подключение к серверу", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(8.dp))
             OutlinedTextField(
                 value = serverUrl,
@@ -103,28 +102,11 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             )
             Spacer(Modifier.height(8.dp))
-            Button(
-                onClick = { vm.syncFromServer() },
-                enabled = syncState !is SyncState.Syncing,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(if (syncState is SyncState.Syncing) "Импорт…" else "Импортировать этикетки")
-            }
-            when (val s = syncState) {
-                is SyncState.Done -> {
-                    Spacer(Modifier.height(4.dp))
-                    Text("Импортировано: ${s.imported} новых позиций", color = MaterialTheme.colorScheme.primary)
-                    LaunchedEffect(s) {
-                        kotlinx.coroutines.delay(4000)
-                        vm.clearSyncState()
-                    }
-                }
-                is SyncState.Error -> {
-                    Spacer(Modifier.height(4.dp))
-                    Text("Ошибка: ${s.msg}", color = MaterialTheme.colorScheme.error)
-                }
-                else -> {}
-            }
+            Text(
+                "Список этикеток загружается с сервера при каждом запуске",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

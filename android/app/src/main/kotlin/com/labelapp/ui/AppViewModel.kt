@@ -7,8 +7,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.labelapp.ble.BleManager
 import com.labelapp.ble.ScannedDevice
-import com.labelapp.data.AppDatabase
-import com.labelapp.data.InventoryCounter
 import com.labelapp.data.Prefs
 import com.labelapp.data.Product
 import com.labelapp.label.LabelRenderer
@@ -16,9 +14,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.json.JSONArray
+import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
-import java.time.LocalDate
 
 sealed class PrintState {
     object Idle : PrintState()
@@ -27,48 +25,68 @@ sealed class PrintState {
     data class Error(val msg: String) : PrintState()
 }
 
-sealed class SyncState {
-    object Idle : SyncState()
-    object Syncing : SyncState()
-    data class Done(val imported: Int) : SyncState()
-    data class Error(val msg: String) : SyncState()
-}
-
 class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val ctx = app
-    private val dao = AppDatabase.get(app).productDao()
     val prefs = Prefs(app)
 
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query
 
-    val products: StateFlow<List<Product>> = _query
-        .flatMapLatest { q -> if (q.isBlank()) dao.observeAll() else dao.search(q) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    private val _allProducts = MutableStateFlow<List<Product>>(emptyList())
+
+    val products: StateFlow<List<Product>> = combine(_allProducts, _query) { all, q ->
+        if (q.isBlank()) all else all.filter { it.name.contains(q, ignoreCase = true) }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val _printState = MutableStateFlow<PrintState>(PrintState.Idle)
     val printState: StateFlow<PrintState> = _printState
 
+    private val _loadError = MutableStateFlow<String?>(null)
+    val loadError: StateFlow<String?> = _loadError
+
     private val _scannedDevices = MutableStateFlow<List<ScannedDevice>>(emptyList())
     val scannedDevices: StateFlow<List<ScannedDevice>> = _scannedDevices
 
+    init { loadProducts() }
+
     fun setQuery(q: String) { _query.value = q }
 
-    fun addAndPrint(name: String, iconFilename: String) = viewModelScope.launch {
-        val invNum = nextInventoryNumber()
-        val product = Product(
-            inventoryNumber = invNum,
-            name = name,
-            iconFilename = iconFilename,
-            createdAt = LocalDate.now().toString(),
-        )
-        dao.insert(product)
-        doPrint(product)
+    fun loadProducts() = viewModelScope.launch(Dispatchers.IO) {
+        _loadError.value = null
+        try {
+            _allProducts.value = fetchFromServer()
+        } catch (e: Exception) {
+            _loadError.value = e.message ?: "Ошибка загрузки"
+        }
+    }
+
+    fun addAndPrint(name: String, iconFilename: String) = viewModelScope.launch(Dispatchers.IO) {
+        _printState.value = PrintState.Printing
+        try {
+            val body = JSONObject().apply {
+                put("name", name)
+                put("icon_filename", iconFilename)
+            }.toString()
+            val conn = openApi("/api/products", "POST", body)
+            if (conn.responseCode != 200) error("HTTP ${conn.responseCode}")
+            val product = parseProduct(JSONObject(conn.inputStream.bufferedReader().readText()))
+            _allProducts.value = listOf(product) + _allProducts.value
+            doPrint(product)
+        } catch (e: Exception) {
+            _printState.value = PrintState.Error(e.message ?: "Ошибка создания")
+        }
     }
 
     fun reprint(product: Product) = viewModelScope.launch { doPrint(product) }
 
-    fun softDelete(id: Int) = viewModelScope.launch { dao.softDelete(id) }
+    fun softDelete(id: String) = viewModelScope.launch(Dispatchers.IO) {
+        try {
+            val conn = openApi("/api/products/$id/delete", "POST")
+            if (conn.responseCode == 200) {
+                _allProducts.value = _allProducts.value.filter { it.id != id }
+            }
+        } catch (_: Exception) {}
+    }
 
     fun scanDevices() = viewModelScope.launch {
         _scannedDevices.value = emptyList()
@@ -76,50 +94,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun clearPrintState() { _printState.value = PrintState.Idle }
-
-    private val _syncState = MutableStateFlow<SyncState>(SyncState.Idle)
-    val syncState: StateFlow<SyncState> = _syncState
-
-    fun syncFromServer() = viewModelScope.launch(Dispatchers.IO) {
-        _syncState.value = SyncState.Syncing
-        try {
-            val conn = URL("${prefs.serverUrl.trimEnd('/')}/api/products").openConnection() as HttpURLConnection
-            conn.requestMethod = "GET"
-            conn.setRequestProperty(
-                "Authorization",
-                "Basic ${Base64.encodeToString("${prefs.syncUsername}:${prefs.syncPassword}".toByteArray(), Base64.NO_WRAP)}"
-            )
-            conn.connectTimeout = 15_000
-            conn.readTimeout = 15_000
-            if (conn.responseCode != 200) error("HTTP ${conn.responseCode}")
-            val arr = JSONArray(conn.inputStream.bufferedReader().readText())
-            var count = 0
-            var maxNum = 0
-            for (i in 0 until arr.length()) {
-                val obj = arr.getJSONObject(i)
-                if (obj.optBoolean("is_deleted", false)) continue
-                val invNum = obj.getString("inventory_number")
-                if (dao.findByInventoryNumber(invNum) != null) continue
-                dao.insert(Product(
-                    inventoryNumber = invNum,
-                    name = obj.getString("name"),
-                    iconFilename = obj.optString("icon_filename", "placeholder.png"),
-                    createdAt = obj.getString("created_at").take(10),
-                ))
-                count++
-                maxNum = maxOf(maxNum, invNum.toIntOrNull() ?: 0)
-            }
-            if (maxNum > 0) {
-                val cur = dao.getCounter()?.lastNumber ?: 0
-                if (maxNum > cur) dao.upsertCounter(InventoryCounter(lastNumber = maxNum))
-            }
-            _syncState.value = SyncState.Done(count)
-        } catch (e: Exception) {
-            _syncState.value = SyncState.Error(e.message ?: "Ошибка синхронизации")
-        }
-    }
-
-    fun clearSyncState() { _syncState.value = SyncState.Idle }
+    fun clearLoadError() { _loadError.value = null }
 
     private suspend fun doPrint(product: Product) {
         val address = prefs.bleAddress ?: run {
@@ -138,10 +113,35 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private suspend fun nextInventoryNumber(): String {
-        val counter = dao.getCounter() ?: InventoryCounter()
-        val next = (counter.lastNumber % 9999) + 1
-        dao.upsertCounter(counter.copy(lastNumber = next))
-        return "%04d".format(next)
+    private fun openApi(path: String, method: String, body: String? = null): HttpURLConnection {
+        val conn = URL("${prefs.serverUrl.trimEnd('/')}$path").openConnection() as HttpURLConnection
+        conn.requestMethod = method
+        conn.setRequestProperty(
+            "Authorization",
+            "Basic ${Base64.encodeToString("${prefs.syncUsername}:${prefs.syncPassword}".toByteArray(), Base64.NO_WRAP)}"
+        )
+        conn.connectTimeout = 15_000
+        conn.readTimeout = 15_000
+        if (body != null) {
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.outputStream.write(body.toByteArray())
+        }
+        return conn
     }
+
+    private fun fetchFromServer(): List<Product> {
+        val conn = openApi("/api/products", "GET")
+        if (conn.responseCode != 200) error("HTTP ${conn.responseCode}")
+        val arr = JSONArray(conn.inputStream.bufferedReader().readText())
+        return (0 until arr.length()).map { parseProduct(arr.getJSONObject(it)) }
+    }
+
+    private fun parseProduct(obj: JSONObject) = Product(
+        id = obj.getString("id"),
+        inventoryNumber = obj.getString("inventory_number"),
+        name = obj.getString("name"),
+        iconFilename = obj.optString("icon_filename", "placeholder.png"),
+        createdAt = obj.getString("created_at").take(10),
+    )
 }
