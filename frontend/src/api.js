@@ -14,6 +14,17 @@ export function hasCredentials() {
   return _b64 !== null
 }
 
+export async function apiDownload(path, filename) {
+  const res = await fetch(`/api${path}`, {
+    headers: { Authorization: `Basic ${_b64}` },
+  })
+  if (res.status === 401) { clearCredentials(); throw Object.assign(new Error('Unauthorized'), { status: 401 }) }
+  if (!res.ok) throw new Error(await res.text())
+  const url = URL.createObjectURL(await res.blob())
+  Object.assign(document.createElement('a'), { href: url, download: filename }).click()
+  URL.revokeObjectURL(url)
+}
+
 export async function apiFetch(path, options = {}) {
   const res = await fetch(`/api${path}`, {
     ...options,

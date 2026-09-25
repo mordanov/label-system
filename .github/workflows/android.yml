@@ -9,6 +9,9 @@ on:
 permissions:
   contents: write  # needed for creating releases
 
+env:
+  APK_PATH: android/app/build/outputs/apk/debug/app-debug.apk
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -32,13 +35,27 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: label-app-${{ github.sha }}
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: ${{ env.APK_PATH }}
           retention-days: 30
+
+      - name: Deploy APK to VPS
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          DEPLOY_DIR: ${{ secrets.VPS_WEB_FOLDERS_DIR }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts
+          ssh "$VPS_USER@$VPS_HOST" "mkdir -p $DEPLOY_DIR/apk"
+          scp "$APK_PATH" "$VPS_USER@$VPS_HOST:$DEPLOY_DIR/apk/label-app.apk"
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: android/app/build/outputs/apk/debug/app-debug.apk
+          files: ${{ env.APK_PATH }}
           name: ${{ github.ref_name }}
           generate_release_notes: true

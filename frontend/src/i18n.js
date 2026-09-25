@@ -65,6 +65,7 @@ export const messages = {
 
     searchPlaceholder: 'Search by name…',
 
+    downloadApk: '⬇ Android APK',
     labelSettingsBtn: '⚙ Label',
     labelSettingsTitle: 'Label Layout',
     labelSettingsHint: 'Drag elements to reposition. Use sliders to adjust sizes.',
@@ -146,6 +147,7 @@ export const messages = {
 
     searchPlaceholder: 'Поиск по названию…',
 
+    downloadApk: '⬇ Android APK',
     labelSettingsBtn: '⚙ Этикетка',
     labelSettingsTitle: 'Настройки этикетки',
     labelSettingsHint: 'Перетащите элементы, чтобы изменить позицию. Слайдеры — для размеров.',

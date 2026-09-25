@@ -23,6 +23,9 @@ else:
 
 app.include_router(icons.router)
 
+from .routers import apk
+app.include_router(apk.router)
+
 @app.get("/health")
 async def health():
     return {"status": "ok"}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { hasCredentials, clearCredentials } from './api'
+import { hasCredentials, clearCredentials, apiFetch, apiDownload } from './api'
 import { useT } from './LanguageContext'
 import LoginForm from './components/LoginForm'
 import CreateForm from './components/CreateForm'
@@ -16,9 +16,11 @@ function MainView({ onLogout }) {
   const [printEnabled, setPrintEnabled] = useState(true)
   const [showImport, setShowImport] = useState(false)
   const [showLabelEditor, setShowLabelEditor] = useState(false)
+  const [apkAvailable, setApkAvailable] = useState(false)
 
   useEffect(() => {
     fetch('/api/config').then(r => r.json()).then(c => setPrintEnabled(c.print_enabled))
+    apiFetch('/download/apk/info').then(info => setApkAvailable(info.available)).catch(() => {})
   }, [])
 
   function onCreated() { setRefresh(r => r + 1) }
@@ -38,6 +40,11 @@ function MainView({ onLogout }) {
           <Button variant="outline" size="sm" onClick={() => setShowImport(true)}>
             {t('importFromExcel')}
           </Button>
+          {apkAvailable && (
+            <Button variant="outline" size="sm" onClick={() => apiDownload('/download/apk', 'label-app.apk')}>
+              {t('downloadApk')}
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={onLogout}>{t('signOut')}</Button>
         </div>
       </header>
