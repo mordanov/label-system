@@ -61,6 +61,8 @@ export const messages = {
     deleteBtn: 'Delete',
     reprintFailed: 'Printing failed.',
     confirmDelete: 'Delete "{name}"?',
+    restore: 'Restore',
+    confirmRestore: 'Restore "{name}"?',
     noProducts: 'No products',
 
     searchPlaceholder: 'Search by name…',
@@ -143,6 +145,8 @@ export const messages = {
     deleteBtn: 'Удалить',
     reprintFailed: 'Печать не удалась.',
     confirmDelete: 'Удалить «{name}»?',
+    restore: 'Восстановить',
+    confirmRestore: 'Восстановить «{name}»?',
     noProducts: 'Нет продуктов',
 
     searchPlaceholder: 'Поиск по названию…',

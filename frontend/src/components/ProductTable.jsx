@@ -62,6 +62,17 @@ export default function ProductTable({ refresh, printEnabled = true }) {
     }
   }
 
+  async function restore(id, name) {
+    if (!window.confirm(t('confirmRestore', { name }))) return
+    setBusy(b => ({ ...b, [id]: 'restore' }))
+    try {
+      await apiFetch(`/products/${id}/restore`, { method: 'POST' })
+      load()
+    } finally {
+      setBusy(b => ({ ...b, [id]: null }))
+    }
+  }
+
   function openIconModal(product) {
     setIconModal(product)
     setPendingIcon(product.icon_filename)
@@ -182,7 +193,15 @@ export default function ProductTable({ refresh, printEnabled = true }) {
                     : <Badge variant="outline" className="text-green-700 border-green-300">{t('statusActive')}</Badge>}
                 </TableCell>
                 <TableCell>
-                  {!p.is_deleted && (
+                  {p.is_deleted ? (
+                    <Button
+                      size="sm" variant="outline"
+                      onClick={() => restore(p.id, p.name)}
+                      disabled={!!busy[p.id]}
+                    >
+                      {busy[p.id] === 'restore' ? '…' : t('restore')}
+                    </Button>
+                  ) : (
                     <div className="flex items-center gap-1">
                       {printEnabled && (
                         <Button
