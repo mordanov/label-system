@@ -190,3 +190,20 @@ async def delete_product(
 
     await db.refresh(product)
     return ProductResponse.model_validate(product)
+
+
+@router.post("/{product_id}/restore", response_model=ProductResponse)
+async def restore_product(
+    product_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+):
+    async with db.begin():
+        product = await db.get(Product, product_id)
+        if not product or not product.is_deleted:
+            raise HTTPException(status_code=404, detail="Product not found or not deleted")
+        product.is_deleted = False
+        product.deleted_at = None
+        product.deleted_by = None
+    await db.refresh(product)
+    return ProductResponse.model_validate(product)
