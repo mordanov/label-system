@@ -16,11 +16,13 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
     val scanned by vm.scannedDevices.collectAsState()
+    val tokenState by vm.tokenState.collectAsState()
     var address by remember { mutableStateOf(vm.prefs.bleAddress ?: "") }
     var scanning by remember { mutableStateOf(false) }
     var serverUrl by remember { mutableStateOf(vm.prefs.serverUrl) }
     var syncUser by remember { mutableStateOf(vm.prefs.syncUsername) }
     var syncPass by remember { mutableStateOf(vm.prefs.syncPassword) }
+    val hasToken = vm.prefs.authToken != null
 
     Scaffold(
         topBar = {
@@ -101,12 +103,31 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             )
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "Список этикеток загружается с сервера при каждом запуске",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Spacer(Modifier.height(12.dp))
+            Button(
+                onClick = { vm.refreshToken() },
+                enabled = tokenState == null && syncUser.isNotBlank() && syncPass.isNotBlank(),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(if (tokenState == null) "Подключить к серверу" else "Подключение…")
+            }
+            when {
+                tokenState == "OK" -> Text(
+                    "✓ Подключено${if (hasToken) " (токен сохранён)" else ""}",
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                tokenState != null && tokenState != "OK" -> Text(
+                    tokenState!!,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                hasToken -> Text(
+                    "Токен активен (действует 90 дней)",
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
         }
     }
 }

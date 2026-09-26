@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { setCredentials } from '../api'
+import { setToken } from '../api'
 import { useT } from '../LanguageContext'
 import LangSwitcher from './LangSwitcher'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -15,12 +15,16 @@ export default function LoginForm({ onLogin }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    setCredentials(user, pass)
+    setErr('')
     try {
-      const r = await fetch('/api/products', {
-        headers: { Authorization: `Basic ${btoa(`${user}:${pass}`)}` },
+      const res = await fetch('/api/auth/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: user, password: pass }),
       })
-      if (r.status === 401) throw new Error('bad')
+      if (!res.ok) throw new Error('bad')
+      const { token } = await res.json()
+      setToken(token)
       onLogin()
     } catch {
       setErr(t('invalidCredentials'))

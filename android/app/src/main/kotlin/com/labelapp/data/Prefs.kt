@@ -20,4 +20,9 @@ class Prefs(context: Context) {
     var syncPassword: String
         get() = prefs.getString("sync_pass", "") ?: ""
         set(v) = prefs.edit().putString("sync_pass", v).apply()
+
+    var authToken: String?
+        get() = prefs.getString("auth_token", null)
+        set(v) = if (v != null) prefs.edit().putString("auth_token", v).apply()
+                 else prefs.edit().remove("auth_token").apply()
 }

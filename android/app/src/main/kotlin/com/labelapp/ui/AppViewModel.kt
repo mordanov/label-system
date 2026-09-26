@@ -159,13 +159,17 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    // ponytail: tries token first, falls back to Basic so old installs keep working
     private fun openApi(path: String, method: String, body: String? = null): HttpURLConnection {
         val conn = URL("${prefs.serverUrl.trimEnd('/')}$path").openConnection() as HttpURLConnection
         conn.requestMethod = method
-        conn.setRequestProperty(
-            "Authorization",
-            "Basic ${Base64.encodeToString("${prefs.syncUsername}:${prefs.syncPassword}".toByteArray(), Base64.NO_WRAP)}"
-        )
+        val token = prefs.authToken
+        if (token != null) {
+            conn.setRequestProperty("Authorization", "Bearer $token")
+        } else {
+            conn.setRequestProperty("Authorization",
+                "Basic ${Base64.encodeToString("${prefs.syncUsername}:${prefs.syncPassword}".toByteArray(), Base64.NO_WRAP)}")
+        }
         conn.connectTimeout = 15_000
         conn.readTimeout = 15_000
         if (body != null) {
@@ -174,6 +178,36 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             conn.outputStream.write(body.toByteArray())
         }
         return conn
+    }
+
+    private val _tokenState = MutableStateFlow<String?>(null)
+    val tokenState: StateFlow<String?> = _tokenState
+
+    fun refreshToken() = viewModelScope.launch(Dispatchers.IO) {
+        _tokenState.value = null
+        try {
+            val body = JSONObject().apply {
+                put("username", prefs.syncUsername)
+                put("password", prefs.syncPassword)
+            }.toString()
+            val conn = URL("${prefs.serverUrl.trimEnd('/')}/auth/token").openConnection() as HttpURLConnection
+            conn.requestMethod = "POST"
+            conn.connectTimeout = 15_000
+            conn.readTimeout = 15_000
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.outputStream.write(body.toByteArray())
+            if (conn.responseCode != 200) {
+                _tokenState.value = "Ошибка: HTTP ${conn.responseCode}"
+                return@launch
+            }
+            val json = JSONObject(conn.inputStream.bufferedReader().readText())
+            prefs.authToken = json.getString("token")
+            _tokenState.value = "OK"
+            loadProducts()
+        } catch (e: Exception) {
+            _tokenState.value = "Ошибка: ${e.message}"
+        }
     }
 
     private fun fetchFromServer(): List<Product> {

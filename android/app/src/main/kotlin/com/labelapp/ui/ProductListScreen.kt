@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.widthIn
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,7 +51,8 @@ fun ProductListScreen(vm: AppViewModel, onSettings: () -> Unit, onAdd: () -> Uni
             }
         }
     ) { padding ->
-        Column(Modifier.padding(padding).fillMaxSize()) {
+        Column(Modifier.padding(padding).fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+          Column(Modifier.widthIn(max = 720.dp).fillMaxSize()) {
             if (updateAvailable) {
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
@@ -93,6 +95,7 @@ fun ProductListScreen(vm: AppViewModel, onSettings: () -> Unit, onAdd: () -> Uni
                     HorizontalDivider()
                 }
             }
+          } // inner max-width column
         }
 
         // Print status overlay
