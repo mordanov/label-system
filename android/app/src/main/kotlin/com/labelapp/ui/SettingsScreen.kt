@@ -7,6 +7,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -17,6 +18,7 @@ import androidx.compose.ui.unit.dp
 fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
     val scanned by vm.scannedDevices.collectAsState()
     val tokenState by vm.tokenState.collectAsState()
+    val showDeleted by vm.showDeleted.collectAsState()
     var address by remember { mutableStateOf(vm.prefs.bleAddress ?: "") }
     var scanning by remember { mutableStateOf(false) }
     var serverUrl by remember { mutableStateOf(vm.prefs.serverUrl) }
@@ -127,6 +129,20 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
                     color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.bodySmall,
                 )
+            }
+
+            Spacer(Modifier.height(24.dp))
+            HorizontalDivider()
+            Spacer(Modifier.height(16.dp))
+            Text("Отображение", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(8.dp))
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text("Просмотр удалённых позиций")
+                Switch(checked = showDeleted, onCheckedChange = { vm.setShowDeleted(it) })
             }
         }
     }
