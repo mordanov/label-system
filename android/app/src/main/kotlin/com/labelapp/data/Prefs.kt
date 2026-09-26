@@ -25,4 +25,8 @@ class Prefs(context: Context) {
         get() = prefs.getString("auth_token", null)
         set(v) = if (v != null) prefs.edit().putString("auth_token", v).apply()
                  else prefs.edit().remove("auth_token").apply()
+
+    var showDeleted: Boolean
+        get() = prefs.getBoolean("show_deleted", false)
+        set(v) = prefs.edit().putBoolean("show_deleted", v).apply()
 }
