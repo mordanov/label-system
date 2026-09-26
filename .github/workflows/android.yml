@@ -29,6 +29,8 @@ jobs:
 
       - name: Build debug APK
         working-directory: android
+        env:
+          VERSION_CODE: ${{ github.run_number }}
         run: gradle assembleDebug
 
       - name: Upload APK artifact
@@ -51,6 +53,13 @@ jobs:
           ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts
           ssh "$VPS_USER@$VPS_HOST" "mkdir -p $DEPLOY_DIR/apk"
           scp "$APK_PATH" "$VPS_USER@$VPS_HOST:$DEPLOY_DIR/apk/label-app.apk"
+          echo '{"version_code":${{ github.run_number }}}' > version.json
+          scp version.json "$VPS_USER@$VPS_HOST:$DEPLOY_DIR/apk/version.json"
+          ssh "$VPS_USER@$VPS_HOST" "
+            docker exec web-folders-label-system-backend-1 mkdir -p /app/apk 2>/dev/null || true
+            docker cp $DEPLOY_DIR/apk/label-app.apk web-folders-label-system-backend-1:/app/apk/label-app.apk 2>/dev/null || true
+            docker cp $DEPLOY_DIR/apk/version.json web-folders-label-system-backend-1:/app/apk/version.json 2>/dev/null || true
+          "
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')

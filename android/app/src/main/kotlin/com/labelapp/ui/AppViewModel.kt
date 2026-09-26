@@ -1,10 +1,13 @@
 package com.labelapp.ui
 
 import android.app.Application
+import android.content.Intent
 import android.graphics.BitmapFactory
 import android.util.Base64
+import androidx.core.content.FileProvider
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.labelapp.BuildConfig
 import com.labelapp.ble.BleManager
 import com.labelapp.ble.ScannedDevice
 import com.labelapp.data.Prefs
@@ -15,6 +18,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -47,7 +51,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val _scannedDevices = MutableStateFlow<List<ScannedDevice>>(emptyList())
     val scannedDevices: StateFlow<List<ScannedDevice>> = _scannedDevices
 
-    init { loadProducts() }
+    private val _updateAvailable = MutableStateFlow(false)
+    val updateAvailable: StateFlow<Boolean> = _updateAvailable
+
+    private val _downloading = MutableStateFlow(false)
+    val downloading: StateFlow<Boolean> = _downloading
+
+    init {
+        loadProducts()
+        checkForUpdate()
+    }
 
     fun setQuery(q: String) { _query.value = q }
 
@@ -95,6 +108,39 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun clearPrintState() { _printState.value = PrintState.Idle }
     fun clearLoadError() { _loadError.value = null }
+
+    private fun checkForUpdate() = viewModelScope.launch(Dispatchers.IO) {
+        try {
+            val conn = openApi("/download/apk/info", "GET")
+            if (conn.responseCode != 200) return@launch
+            val serverCode = JSONObject(conn.inputStream.bufferedReader().readText()).optInt("version_code", 0)
+            if (serverCode > BuildConfig.VERSION_CODE) _updateAvailable.value = true
+        } catch (_: Exception) {}
+    }
+
+    fun downloadAndInstall() = viewModelScope.launch(Dispatchers.IO) {
+        _downloading.value = true
+        try {
+            val conn = URL("${prefs.serverUrl.trimEnd('/')}/download/apk").openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("Authorization",
+                "Basic ${Base64.encodeToString("${prefs.syncUsername}:${prefs.syncPassword}".toByteArray(), Base64.NO_WRAP)}")
+            conn.connectTimeout = 15_000
+            conn.readTimeout = 120_000
+            if (conn.responseCode != 200) return@launch
+            val apkFile = File(ctx.cacheDir, "updates/label-app.apk").also { it.parentFile?.mkdirs() }
+            conn.inputStream.use { input -> apkFile.outputStream().use { input.copyTo(it) } }
+            val uri = FileProvider.getUriForFile(ctx, "${ctx.packageName}.provider", apkFile)
+            ctx.startActivity(Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "application/vnd.android.package-archive")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
+            })
+            _updateAvailable.value = false
+        } catch (_: Exception) {
+        } finally {
+            _downloading.value = false
+        }
+    }
 
     private suspend fun doPrint(product: Product) {
         val address = prefs.bleAddress ?: run {

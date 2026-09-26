@@ -20,6 +20,8 @@ fun ProductListScreen(vm: AppViewModel, onSettings: () -> Unit, onAdd: () -> Uni
     val query by vm.query.collectAsState()
     val printState by vm.printState.collectAsState()
     val loadError by vm.loadError.collectAsState()
+    val updateAvailable by vm.updateAvailable.collectAsState()
+    val downloading by vm.downloading.collectAsState()
 
     LaunchedEffect(printState) {
         if (printState is PrintState.Done) {
@@ -49,6 +51,19 @@ fun ProductListScreen(vm: AppViewModel, onSettings: () -> Unit, onAdd: () -> Uni
         }
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
+            if (updateAvailable) {
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("Доступна новая версия", modifier = Modifier.weight(1f))
+                    Button(
+                        onClick = { vm.downloadAndInstall() },
+                        enabled = !downloading,
+                    ) { Text(if (downloading) "Загрузка…" else "Обновить") }
+                }
+            }
+
             if (loadError != null) {
                 Row(
                     Modifier.fillMaxWidth().padding(8.dp),

@@ -73,5 +73,6 @@ jobs:
               sleep 5
               docker exec web-folders-label-system-backend-1 mkdir -p /app/apk 2>/dev/null || true
               docker cp apk/label-app.apk web-folders-label-system-backend-1:/app/apk/label-app.apk && echo 'APK deployed to container'
+              [ -f apk/version.json ] && docker cp apk/version.json web-folders-label-system-backend-1:/app/apk/version.json || true
             fi
           "
