@@ -16,7 +16,7 @@ android {
         versionName = System.getenv("VERSION_CODE") ?: "dev"
     }
 
-    buildFeatures { compose = true }
+    buildFeatures { compose = true; buildConfig = true }
     composeOptions { kotlinCompilerExtensionVersion = "1.5.8" }
     kotlinOptions { jvmTarget = "1.8" }
 
