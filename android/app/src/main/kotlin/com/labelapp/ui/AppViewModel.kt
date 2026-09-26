@@ -2,6 +2,7 @@ package com.labelapp.ui
 
 import android.app.Application
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Base64
 import androidx.core.content.FileProvider
@@ -36,10 +37,17 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query
 
+    private val _showDeleted = MutableStateFlow(prefs.showDeleted)
+    val showDeleted: StateFlow<Boolean> = _showDeleted
+
     private val _allProducts = MutableStateFlow<List<Product>>(emptyList())
 
-    val products: StateFlow<List<Product>> = combine(_allProducts, _query) { all, q ->
-        if (q.isBlank()) all else all.filter { it.name.contains(q, ignoreCase = true) }
+    val products: StateFlow<List<Product>> = combine(_allProducts, _query, _showDeleted) { all, q, showDel ->
+        val filtered = if (showDel) all else all.filter { !it.isDeleted }
+        if (q.isBlank()) filtered
+        else filtered.filter {
+            it.name.contains(q, ignoreCase = true) || it.inventoryNumber.contains(q, ignoreCase = true)
+        }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val _printState = MutableStateFlow<PrintState>(PrintState.Idle)
@@ -57,12 +65,31 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val _downloading = MutableStateFlow(false)
     val downloading: StateFlow<Boolean> = _downloading
 
+    private val _iconCache = MutableStateFlow<Map<String, Bitmap?>>(emptyMap())
+    val iconCache: StateFlow<Map<String, Bitmap?>> = _iconCache
+    private val _iconRequested = mutableSetOf<String>()
+
+    private val _iconList = MutableStateFlow<List<String>>(emptyList())
+    val iconList: StateFlow<List<String>> = _iconList
+
+    private val _generatingIcon = MutableStateFlow(false)
+    val generatingIcon: StateFlow<Boolean> = _generatingIcon
+
+    private val _generatedIconFilename = MutableStateFlow<String?>(null)
+    val generatedIconFilename: StateFlow<String?> = _generatedIconFilename
+
     init {
         loadProducts()
         checkForUpdate()
     }
 
     fun setQuery(q: String) { _query.value = q }
+
+    fun setShowDeleted(v: Boolean) {
+        prefs.showDeleted = v
+        _showDeleted.value = v
+        loadProducts()
+    }
 
     fun loadProducts() = viewModelScope.launch(Dispatchers.IO) {
         _loadError.value = null
@@ -73,7 +100,53 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun addAndPrint(name: String, iconFilename: String) = viewModelScope.launch(Dispatchers.IO) {
+    fun loadIcon(filename: String) = viewModelScope.launch(Dispatchers.IO) {
+        if (filename.isBlank() || filename == "placeholder.png") return@launch
+        val alreadyRequested = synchronized(_iconRequested) {
+            if (_iconRequested.contains(filename)) true
+            else { _iconRequested.add(filename); false }
+        }
+        if (alreadyRequested) return@launch
+        try {
+            val conn = openApi("/api/icons/$filename", "GET")
+            if (conn.responseCode != 200) return@launch
+            val bytes = conn.inputStream.readBytes()
+            val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return@launch
+            _iconCache.value = _iconCache.value + (filename to bmp)
+        } catch (_: Exception) {}
+    }
+
+    fun loadIconList() = viewModelScope.launch(Dispatchers.IO) {
+        try {
+            val conn = openApi("/api/icons", "GET")
+            if (conn.responseCode != 200) return@launch
+            val arr = JSONArray(conn.inputStream.bufferedReader().readText())
+            _iconList.value = (0 until arr.length()).map { arr.getJSONObject(it).getString("filename") }
+        } catch (_: Exception) {}
+    }
+
+    fun generateIcon(name: String) = viewModelScope.launch(Dispatchers.IO) {
+        _generatingIcon.value = true
+        try {
+            val body = JSONObject().put("dish_name", name).toString()
+            val conn = openApi("/api/icons/generate", "POST", body)
+            if (conn.responseCode != 200) return@launch
+            val json = JSONObject(conn.inputStream.bufferedReader().readText())
+            val filename = json.getString("filename")
+            val b64 = json.getString("image_b64")
+            val bytes = Base64.decode(b64, Base64.DEFAULT)
+            val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            if (bmp != null) _iconCache.value = _iconCache.value + (filename to bmp)
+            _generatedIconFilename.value = filename
+        } catch (_: Exception) {
+        } finally {
+            _generatingIcon.value = false
+        }
+    }
+
+    fun clearGeneratedIcon() { _generatedIconFilename.value = null }
+
+    fun addAndPrint(name: String, iconFilename: String, copies: Int = 1) = viewModelScope.launch(Dispatchers.IO) {
         _printState.value = PrintState.Printing
         try {
             val body = JSONObject().apply {
@@ -84,19 +157,29 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             if (conn.responseCode != 200) error("HTTP ${conn.responseCode}")
             val product = parseProduct(JSONObject(conn.inputStream.bufferedReader().readText()))
             _allProducts.value = listOf(product) + _allProducts.value
-            doPrint(product)
+            repeat(copies) { doPrint(product) }
         } catch (e: Exception) {
             _printState.value = PrintState.Error(e.message ?: "Ошибка создания")
         }
     }
 
-    fun reprint(product: Product) = viewModelScope.launch { doPrint(product) }
+    fun reprint(product: Product, copies: Int = 1) = viewModelScope.launch { repeat(copies) { doPrint(product) } }
 
     fun softDelete(id: String) = viewModelScope.launch(Dispatchers.IO) {
         try {
             val conn = openApi("/api/products/$id/delete", "POST")
             if (conn.responseCode == 200) {
                 _allProducts.value = _allProducts.value.filter { it.id != id }
+            }
+        } catch (_: Exception) {}
+    }
+
+    fun restoreProduct(id: String) = viewModelScope.launch(Dispatchers.IO) {
+        try {
+            val conn = openApi("/api/products/$id/restore", "POST")
+            if (conn.responseCode == 200) {
+                val restored = parseProduct(JSONObject(conn.inputStream.bufferedReader().readText()))
+                _allProducts.value = _allProducts.value.map { if (it.id == id) restored else it }
             }
         } catch (_: Exception) {}
     }
@@ -148,8 +231,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             return
         }
         _printState.value = PrintState.Printing
-        val iconBytes = try { ctx.assets.open("icons/${product.iconFilename}").readBytes() } catch (_: Exception) { null }
-        val iconBitmap = iconBytes?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
+        val iconBitmap = _iconCache.value[product.iconFilename]
+            ?: try {
+                ctx.assets.open("icons/${product.iconFilename}").readBytes()
+                    .let { BitmapFactory.decodeByteArray(it, 0, it.size) }
+            } catch (_: Exception) { null }
         val imageData = LabelRenderer.renderToBytes(product, iconBitmap)
         try {
             BleManager.print(ctx, address, imageData)
@@ -211,7 +297,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun fetchFromServer(): List<Product> {
-        val conn = openApi("/api/products", "GET")
+        val path = if (prefs.showDeleted) "/api/products?include_deleted=true" else "/api/products"
+        val conn = openApi(path, "GET")
         if (conn.responseCode != 200) error("HTTP ${conn.responseCode}")
         val arr = JSONArray(conn.inputStream.bufferedReader().readText())
         return (0 until arr.length()).map { parseProduct(arr.getJSONObject(it)) }
@@ -223,5 +310,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         name = obj.getString("name"),
         iconFilename = obj.optString("icon_filename", "placeholder.png"),
         createdAt = obj.getString("created_at").take(10),
+        isDeleted = obj.optBoolean("is_deleted", false),
+        deletedAt = obj.optString("deleted_at", "").takeIf { it.isNotEmpty() },
+        deletedBy = obj.optString("deleted_by", "").takeIf { it.isNotEmpty() },
     )
 }
